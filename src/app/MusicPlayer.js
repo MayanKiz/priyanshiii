@@ -16,7 +16,7 @@ export default function MusicPlayer() {
   return (
     <div onClick={handleClick}>
       <audio ref={audioRef} loop>
-        <source src="/song.mp3" type="audio/mpeg" />
+        <source src="public/images/NAZAR-KE-TEER-SLOWED-REVERB-Teri-Surat-Dil-Ne-Bhagi-Vikram-S.m4a" type="audio/mpeg" />
       </audio>
     </div>
   );
