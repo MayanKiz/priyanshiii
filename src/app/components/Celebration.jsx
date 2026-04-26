@@ -1,7 +1,7 @@
 "use client"
 
 import { motion, AnimatePresence } from "motion/react"
-import { Gift, Sparkles, Heart, Music, Star, PartyPopper, Cake, Balloon, Camera, Volume2, VolumeX } from "lucide-react"
+import { Gift, Sparkles, Heart, Music, Star, PartyPopper, Cake, Balloon, Volume2, VolumeX } from "lucide-react"
 import confetti from "canvas-confetti"
 import { useEffect, useState, useRef } from "react"
 
@@ -10,9 +10,28 @@ export default function Celebration({ onNext }) {
     const [clickCount, setClickCount] = useState(0)
     const [isMuted, setIsMuted] = useState(true)
     const [floatingHearts, setFloatingHearts] = useState([])
+    const [windowHeight, setWindowHeight] = useState(0)
+    const [windowWidth, setWindowWidth] = useState(0)
+    const [particles, setParticles] = useState([])
     const audioRef = useRef(null)
 
     const colors = ["#ff69b4", "#ff1493", "#9370db", "#00bfff", "#ffd700", "#ff4500"]
+
+    // Initialize window dimensions after mount
+    useEffect(() => {
+        setWindowHeight(window.innerHeight)
+        setWindowWidth(window.innerWidth)
+        
+        // Generate particles only on client side
+        const newParticles = [...Array(30)].map((_, i) => ({
+            id: i,
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+            duration: 3 + Math.random() * 4,
+            delay: Math.random() * 5,
+        }))
+        setParticles(newParticles)
+    }, [])
 
     // Continuous confetti from both sides
     useEffect(() => {
@@ -99,7 +118,7 @@ export default function Celebration({ onNext }) {
         // Play celebration sound if unmuted
         if (!isMuted && audioRef.current) {
             audioRef.current.currentTime = 0
-            audioRef.current.play()
+            audioRef.current.play().catch(e => console.log("Audio play failed:", e))
         }
     }
 
@@ -112,14 +131,14 @@ export default function Celebration({ onNext }) {
             {/* Audio element for celebration sound */}
             <audio ref={audioRef} src="/celebration.mp3" preload="auto" />
             
-            {/* Floating hearts animation */}
-            {floatingHearts.map((heart) => (
+            {/* Floating hearts animation - only render if windowHeight exists */}
+            {windowHeight > 0 && floatingHearts.map((heart) => (
                 <motion.div
                     key={heart.id}
                     className="fixed pointer-events-none z-50"
                     style={{ left: `${heart.x}%`, bottom: 0 }}
                     initial={{ y: 0, opacity: 1, scale: 0.5 }}
-                    animate={{ y: -window.innerHeight, opacity: 0, scale: 1.5 }}
+                    animate={{ y: -windowHeight, opacity: 0, scale: 1.5 }}
                     transition={{ duration: 4, ease: "easeOut" }}
                 >
                     <Heart className="w-6 h-6 text-pink-500 fill-pink-500" />
@@ -132,21 +151,21 @@ export default function Celebration({ onNext }) {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0, y: -100 }}
             >
-                {/* Animated background particles */}
+                {/* Animated background particles - fixed for SSR */}
                 <div className="absolute inset-0 overflow-hidden">
-                    {[...Array(30)].map((_, i) => (
+                    {particles.map((particle) => (
                         <motion.div
-                            key={i}
+                            key={particle.id}
                             className="absolute w-1 h-1 bg-white/20 rounded-full"
-                            initial={{ x: Math.random() * window.innerWidth, y: Math.random() * window.innerHeight }}
+                            style={{ left: particle.x, top: particle.y }}
                             animate={{
                                 y: [null, -100, -200],
                                 opacity: [0, 1, 0],
                             }}
                             transition={{
-                                duration: 3 + Math.random() * 4,
+                                duration: particle.duration,
                                 repeat: Infinity,
-                                delay: Math.random() * 5,
+                                delay: particle.delay,
                             }}
                         />
                     ))}
@@ -308,7 +327,7 @@ export default function Celebration({ onNext }) {
                                 >
                                     <Star className="w-16 h-16 text-yellow-300 mx-auto mb-4 fill-yellow-300" />
                                 </motion.div>
-                                <h2 className="text-3xl font-bold text-white mb-2">SURPRISE! 😊🎁</h2>
+                                <h2 className="text-3xl font-bold text-white mb-2">SURPRISE! 🎁</h2>
                                 <p className="text-white/90">You found the secret celebration!</p>
                             </div>
                         </motion.div>
