@@ -14,7 +14,7 @@ export default function BirthdayApp() {
   const [currentScreen, setCurrentScreen] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
 
-  const birthdayDate = new Date("2026-06-11T00:00:00")
+  const birthdayDate = new Date("2026-03-11T00:00:00")
   const [isBirthdayOver, setisBirthdayOver] = useState(new Date().getTime() >= birthdayDate.getTime())
 
   useEffect(() => {
