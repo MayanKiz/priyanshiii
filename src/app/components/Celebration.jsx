@@ -308,7 +308,7 @@ export default function Celebration({ onNext }) {
                                 >
                                     <Star className="w-16 h-16 text-yellow-300 mx-auto mb-4 fill-yellow-300" />
                                 </motion.div>
-                                <h2 className="text-3xl font-bold text-white mb-2">SURPRISE! 🎁</h2>
+                                <h2 className="text-3xl font-bold text-white mb-2">SURPRISE! 😊🎁</h2>
                                 <p className="text-white/90">You found the secret celebration!</p>
                             </div>
                         </motion.div>
