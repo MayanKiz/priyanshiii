@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "motion/react"
-import { Mail, Heart, Sparkles, RotateCcw, ArrowRight } from "lucide-react"
+import { Mail, Heart, Sparkles, ArrowRight } from "lucide-react"
 import confetti from "canvas-confetti"
 
 export default function Letter({ onNext }) {
@@ -28,7 +28,6 @@ Happy Birthday, beautiful soul! 🎂✨
 With all my love and warmest wishes,
 Forever Yours 💕`
 
-    // Auto-scroll as text appears
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight
@@ -67,14 +66,6 @@ Forever Yours 💕`
         setTimeout(() => setShowText(true), 800)
     }
 
-    const handleReset = () => {
-        setIsOpen(false)
-        setShowText(false)
-        setCurrentText("")
-        setShowCursor(true)
-        setDone(false)
-    }
-
     return (
         <motion.div
             className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden"
@@ -82,6 +73,9 @@ Forever Yours 💕`
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8 }}
         >
+            {/* Nunito font */}
+            <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');`}</style>
+
             {/* Floating particles */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 {["💌", "✨", "🌸", "💕", "⭐", "🌺"].map((emoji, i) => (
@@ -139,7 +133,6 @@ Forever Yours 💕`
                                 exit={{ rotateX: -90, opacity: 0 }}
                                 transition={{ duration: 0.5 }}
                             >
-                                {/* Envelope glow */}
                                 <motion.div
                                     className="absolute inset-0 rounded-2xl blur-xl"
                                     style={{ background: "linear-gradient(135deg, #f9a8d4, #c084fc)" }}
@@ -166,7 +159,7 @@ Forever Yours 💕`
                                         <Sparkles className="w-6 h-6 text-yellow-500" />
                                     </div>
                                     <motion.div
-                                        className="absolute bottom-3 left-1/2 transform -translate-x-1/2 text-pink-700 text-base font-semibold"
+                                        className="absolute bottom-3 left-1/2 transform -translate-x-1/2 text-pink-700 text-base font-semibold whitespace-nowrap"
                                         style={{ fontFamily: "'Nunito', sans-serif" }}
                                         animate={{ opacity: [0.5, 1, 0.5] }}
                                         transition={{ duration: 1.5, repeat: Infinity }}
@@ -197,10 +190,9 @@ Forever Yours 💕`
                                     </motion.div>
                                 </div>
 
-                                {/* Auto-scroll text area */}
                                 <div
                                     ref={scrollRef}
-                                    className="min-h-72 max-h-72 overflow-y-auto text-gray-700 leading-relaxed scroll-smooth"
+                                    className="min-h-72 max-h-72 overflow-y-auto text-gray-700 leading-relaxed"
                                     style={{ scrollBehavior: "smooth" }}
                                 >
                                     {showText && (
@@ -222,32 +214,32 @@ Forever Yours 💕`
                                     )}
                                 </div>
 
-                                {/* Buttons after done */}
-                                {done && (
+                                {/* Only More Surprises button — Read Again removed */}
+                                {done && onNext && (
                                     <motion.div
-                                        className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-6"
+                                        className="flex items-center justify-center mt-6"
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.5 }}
                                     >
-                                        <button
-                                            onClick={handleReset}
-                                            className="inline-flex items-center gap-2 bg-white/60 text-pink-600 font-medium border border-pink-400 px-5 py-2 rounded-full hover:bg-pink-100 transition-all"
-                                            style={{ fontFamily: "'Nunito', sans-serif" }}
+                                        <motion.button
+                                            onClick={onNext}
+                                            className="inline-flex items-center gap-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold px-8 py-3 rounded-full shadow-xl transition-all"
+                                            style={{ fontFamily: "'Nunito', sans-serif", fontSize: "16px" }}
+                                            whileHover={{ scale: 1.06 }}
+                                            whileTap={{ scale: 0.97 }}
+                                            animate={{
+                                                boxShadow: [
+                                                    "0 0 0px rgba(236,72,153,0.4)",
+                                                    "0 0 28px rgba(236,72,153,0.75)",
+                                                    "0 0 0px rgba(236,72,153,0.4)",
+                                                ],
+                                            }}
+                                            transition={{ duration: 2, repeat: Infinity }}
                                         >
-                                            <RotateCcw className="w-4 h-4" />
-                                            Read Again
-                                        </button>
-                                        {onNext && (
-                                            <button
-                                                onClick={onNext}
-                                                className="inline-flex items-center gap-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white font-semibold px-6 py-2 rounded-full shadow-lg hover:scale-105 transition-all"
-                                                style={{ fontFamily: "'Nunito', sans-serif" }}
-                                            >
-                                                More Surprises
-                                                <ArrowRight className="w-4 h-4" />
-                                            </button>
-                                        )}
+                                            More Surprises
+                                            <ArrowRight className="w-5 h-5" />
+                                        </motion.button>
                                     </motion.div>
                                 )}
 
