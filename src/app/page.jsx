@@ -8,6 +8,8 @@ import Celebration from "./components/Celebration"
 import HappyBirthday from "./components/HappyBirthday"
 import PhotoGallery from "./components/PhotoGallery"
 import Letter from "./components/Letter"
+import Wishes from "./components/Wishes"
+import MessageBoard from "./components/MessageBoard"
 import { motion } from "motion/react"
 
 export default function BirthdayApp() {
