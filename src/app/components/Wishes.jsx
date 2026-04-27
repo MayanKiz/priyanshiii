@@ -79,6 +79,9 @@ export default function Wishes({ onNext, onBack }) {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.6 }}
         >
+            {/* YAHAN FONT IMPORT ADD KIYA HAI */}
+            <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');`}</style>
+
             {/* Background orbs */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 <motion.div
