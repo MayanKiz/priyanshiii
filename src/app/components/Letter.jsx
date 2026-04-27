@@ -15,18 +15,17 @@ export default function Letter({ onNext }) {
 
     const letterText = `My Dearest Madam Jii,
 
-On this very special day, I want you to know how incredibly grateful I am to have you in my life. Your birthday isn't just a celebration of another year — it's a celebration of all the joy, laughter, and beautiful memories you bring to this world.
+Happy Birthday to the most amazing person!! 🎂✨ Honestly, on this super special day, a real life angel was born... and her name is Priyanshiii! 🩵
 
-You have this amazing ability to light up any room you enter, to make people smile even on their darkest days, and to spread kindness wherever you go. Your heart is pure gold, and your spirit is absolutely infectious.
+​I really want to thank your parents for bringing you into this world, because now you’re my friend and I feel so, so blessed. I’m incredibly lucky to have you in my life buddyyy..... Today isn't just about you getting a year older—it’s a celebration of all the joy, non-stop laughter, and beautiful memories you bring to everyone around youuu.... 
 
-You are someone who makes the world feel softer, warmer, and more magical just by being in it. I hope you know how rare that is — and how deeply it is felt by everyone around you.
+​You have this literal magic power to light up any room and make people smile even when things feel dark. I don’t know about anyone else, but for me, you are everything and I’m just telling you the truthhh. Your heart is pure gold and your energy is just so infectious! Also... can we talk about your voice?? It is literally supercafigtidiliciuoss! 🎶✨
 
-Thank you for being the wonderful, amazing, absolutely fantastic person that you are. The world is so much brighter because you're in it.
+​I hope you realize how rare you are and how much everyone around you appreciates you. Thank you for being the wonderful, amazing, and absolutely fantastic person you are. The world is so much brighter just because you’re in ittt!
 
-Happy Birthday, beautiful soul! 🎂✨
-
-With all my love and warmest wishes,
-Forever Yours 💕`
+​Happy Birthday to a truly beautiful soul! 🥳💕
+​With all my love and the warmest wishes everrr,
+Forever Yoursss 💖✨`
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -78,7 +77,7 @@ Forever Yours 💕`
 
             {/* Floating particles */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                {["💌", "✨", "🌸", "💕", "⭐", "🌺"].map((emoji, i) => (
+                {["💌", "✨", "🌸", "💕", "✨️", "🌺"].map((emoji, i) => (
                     <motion.div
                         key={i}
                         className="absolute text-lg select-none"
