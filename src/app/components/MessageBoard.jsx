@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import { Send, Mic, Square, Play, Pause, Trash2, CheckCircle, Heart, Sparkles } from "lucide-react"
 
-// ⚠️ IMPORTANT: Revoke and replace your bot token at t.me/BotFather
+// ⚠️ IMPORTANT: Revoke and replace your bot token at t.me/BotFather if exposed publicly
 const BOT_TOKEN = "8673978157:AAFWiYR__xUFb79u9Tfrz-8guCB10sgruX0"
 const CHAT_ID = "8745839603"
 
@@ -13,7 +13,7 @@ async function sendTextToTelegram(text) {
     const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: CHAT_ID, text: `💌 Birthday Message:\n\n${text}`, parse_mode: "HTML" }),
+        body: JSON.stringify({ chat_id: CHAT_ID, text: `💌 <b>Birthday Message from Priyanshi:</b>\n\n${text}`, parse_mode: "HTML" }),
     })
     if (!res.ok) throw new Error("Failed to send message")
 }
@@ -23,7 +23,7 @@ async function sendAudioToTelegram(audioBlob) {
     const formData = new FormData()
     formData.append("chat_id", CHAT_ID)
     formData.append("voice", audioBlob, "birthday_voice_note.ogg")
-    formData.append("caption", "🎙️ Birthday Voice Note from the site!")
+    formData.append("caption", "🎙️ Birthday Voice Note from Priyanshi!")
     const res = await fetch(url, { method: "POST", body: formData })
     if (!res.ok) throw new Error("Failed to send audio")
 }
@@ -145,6 +145,9 @@ export default function MessageBoard() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.6 }}
         >
+            {/* YAHAN FONT IMPORT KIYA HAI */}
+            <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');`}</style>
+
             {/* Background glow */}
             <div className="absolute inset-0 pointer-events-none">
                 <motion.div
@@ -199,7 +202,7 @@ export default function MessageBoard() {
                         Leave a Message
                     </h1>
                     <p className="text-purple-300 text-sm" style={{ fontFamily: "'Nunito', sans-serif" }}>
-                        Send your wishes to Madam Jii 💌
+                        Send your wishes to Mayank 💌
                     </p>
                 </motion.div>
 
@@ -235,7 +238,7 @@ export default function MessageBoard() {
                                     Message sent! 🎉
                                 </p>
                                 <p className="text-gray-400 text-sm text-center" style={{ fontFamily: "'Nunito', sans-serif" }}>
-                                    She'll love it 💕
+                                    He'll love it 💕
                                 </p>
                                 <button
                                     onClick={() => setTextSent(false)}
@@ -250,7 +253,7 @@ export default function MessageBoard() {
                                 <textarea
                                     value={message}
                                     onChange={(e) => setMessage(e.target.value)}
-                                    placeholder="Write your birthday wishes here... 🎂"
+                                    placeholder="Write your reaction here... 🎂"
                                     rows={4}
                                     className="w-full bg-white/5 border border-pink-500/20 rounded-2xl px-4 py-3 text-white placeholder-gray-500 resize-none outline-none focus:border-pink-500/60 transition-all text-sm"
                                     style={{ fontFamily: "'Nunito', sans-serif" }}
@@ -314,7 +317,7 @@ export default function MessageBoard() {
                                     Voice note sent! 🎙️
                                 </p>
                                 <p className="text-gray-400 text-sm text-center" style={{ fontFamily: "'Nunito', sans-serif" }}>
-                                    She'll be so happy to hear you 💜
+                                    He'll be so happy to hear you 💜
                                 </p>
                                 <button
                                     onClick={handleDiscardAudio}
@@ -329,7 +332,7 @@ export default function MessageBoard() {
                                 {!recording ? (
                                     <>
                                         <p className="text-gray-400 text-sm text-center" style={{ fontFamily: "'Nunito', sans-serif" }}>
-                                            Record a voice message for Madam Jii 🎙️
+                                            Record a voice message for Mayank 🎙️
                                         </p>
                                         <motion.button
                                             onClick={startRecording}
@@ -453,7 +456,7 @@ export default function MessageBoard() {
                         animate={{ opacity: [0.5, 1, 0.5] }}
                         transition={{ duration: 3, repeat: Infinity }}
                     >
-                        Made with 💕 just for Madam Jii
+                        Made with 💕 just for You ARTIST 🎨 💐
                     </motion.p>
                 </motion.div>
             </div>
