@@ -17,14 +17,14 @@ export default function Letter({ onNext }) {
 
 Happy Birthday to the most amazing person!! 🎂✨ Honestly, on this super special day, a real life angel was born... and her name is Priyanshiii! 🩵
 
-​I really want to thank your parents for bringing you into this world, because now you’re my friend and I feel so, so blessed. I’m incredibly lucky to have you in my life buddyyy..... Today isn't just about you getting a year older—it’s a celebration of all the joy, non-stop laughter, and beautiful memories you bring to everyone around youuu.... 
+I really want to thank your parents for bringing you into this world, because now you’re my friend and I feel so, so blessed. I’m incredibly lucky to have you in my life buddyyy..... Today isn't just about you getting a year older—it’s a celebration of all the joy, non-stop laughter, and beautiful memories you bring to everyone around youuu.... 
 
-​You have this literal magic power to light up any room and make people smile even when things feel dark. I don’t know about anyone else, but for me, you are everything and I’m just telling you the truthhh. Your heart is pure gold and your energy is just so infectious! Also... can we talk about your voice?? It is literally supercafigtidiliciuoss! 🎶✨
+You have this literal magic power to light up any room and make people smile even when things feel dark. I don’t know about anyone else, but for me, you are everything and I’m just telling you the truthhh. Your heart is pure gold and your energy is just so infectious! Also... can we talk about your voice?? It is literally supercafigtidiliciuoss! 🎶✨
 
-​I hope you realize how rare you are and how much everyone around you appreciates you. Thank you for being the wonderful, amazing, and absolutely fantastic person you are. The world is so much brighter just because you’re in ittt!
+I hope you realize how rare you are and how much everyone around you appreciates you. Thank you for being the wonderful, amazing, and absolutely fantastic person you are. The world is so much brighter just because you’re in ittt!
 
-​Happy Birthday to a truly beautiful soul! 🥳💕
-​With all my love and the warmest wishes everrr,
+Happy Birthday to a truly beautiful soul! 🥳💕
+With all my love and the warmest wishes everrr,
 Forever Yoursss 💖✨`
 
     useEffect(() => {
@@ -170,7 +170,7 @@ Forever Yoursss 💖✨`
                         ) : (
                             <motion.div
                                 key="letter"
-                                className="w-full max-w-2xl rounded-2xl shadow-2xl border-2 border-pink-300 p-8 relative"
+                                className="w-full max-w-2xl rounded-2xl shadow-2xl border-2 border-pink-300 p-8 relative flex flex-col"
                                 initial={{ rotateX: -90, opacity: 0 }}
                                 animate={{ rotateX: 0, opacity: 1 }}
                                 exit={{ opacity: 0, scale: 0.2 }}
@@ -191,13 +191,13 @@ Forever Yoursss 💖✨`
 
                                 <div
                                     ref={scrollRef}
-                                    className="min-h-72 max-h-72 overflow-y-auto text-gray-700 leading-relaxed"
+                                    className="min-h-72 max-h-72 overflow-y-auto text-gray-700 leading-relaxed relative z-10"
                                     style={{ scrollBehavior: "smooth" }}
                                 >
                                     {showText && (
                                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-3 mr-2">
                                             <div
-                                                className="whitespace-pre-wrap"
+                                                className="whitespace-pre-wrap pb-4"
                                                 style={{ fontFamily: "'Nunito', sans-serif", fontSize: "15px", lineHeight: "1.9" }}
                                             >
                                                 {currentText}
@@ -213,39 +213,34 @@ Forever Yoursss 💖✨`
                                     )}
                                 </div>
 
-                                {/* Only More Surprises button — Read Again removed */}
+                                {/* YAHAN HAI TERA SOFT BUTTON JO KHATAM HONE KE BAAD AAYEGA */}
                                 {done && onNext && (
                                     <motion.div
-                                        className="flex items-center justify-center mt-6"
+                                        className="flex items-center justify-center mt-4 relative z-20"
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: 0.5 }}
+                                        transition={{ duration: 0.5, ease: "easeOut" }}
                                     >
                                         <motion.button
                                             onClick={onNext}
-                                            className="inline-flex items-center gap-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold px-8 py-3 rounded-full shadow-xl transition-all"
-                                            style={{ fontFamily: "'Nunito', sans-serif", fontSize: "16px" }}
-                                            whileHover={{ scale: 1.06 }}
-                                            whileTap={{ scale: 0.97 }}
-                                            animate={{
-                                                boxShadow: [
-                                                    "0 0 0px rgba(236,72,153,0.4)",
-                                                    "0 0 28px rgba(236,72,153,0.75)",
-                                                    "0 0 0px rgba(236,72,153,0.4)",
-                                                ],
-                                            }}
-                                            transition={{ duration: 2, repeat: Infinity }}
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            className="group flex items-center gap-3 bg-white/60 backdrop-blur-md px-8 py-3 rounded-full border border-pink-200 shadow-[0_8px_30px_rgb(236,72,153,0.15)] transition-all duration-300"
                                         >
-                                            More Surprises
-                                            <ArrowRight className="w-5 h-5" />
+                                            <span className="text-pink-600 font-bold text-lg" style={{ fontFamily: "'Nunito', sans-serif" }}>
+                                                See what's next...
+                                            </span>
+                                            <div className="bg-gradient-to-r from-pink-400 to-purple-400 p-2 rounded-full group-hover:translate-x-1 transition-transform">
+                                                <ArrowRight className="w-5 h-5 text-white" />
+                                            </div>
                                         </motion.button>
                                     </motion.div>
                                 )}
 
-                                <div className="absolute top-4 left-4"><Sparkles className="w-6 h-6 text-yellow-500" /></div>
-                                <div className="absolute top-4 right-4"><Heart className="w-6 h-6 text-rose-500 fill-current" /></div>
-                                <div className="absolute bottom-4 left-4"><Heart className="w-6 h-6 text-pink-500 fill-current" /></div>
-                                <div className="absolute bottom-4 right-4"><Sparkles className="w-6 h-6 text-purple-500" /></div>
+                                <div className="absolute top-4 left-4 pointer-events-none"><Sparkles className="w-6 h-6 text-yellow-500" /></div>
+                                <div className="absolute top-4 right-4 pointer-events-none"><Heart className="w-6 h-6 text-rose-500 fill-current" /></div>
+                                <div className="absolute bottom-4 left-4 pointer-events-none"><Heart className="w-6 h-6 text-pink-500 fill-current" /></div>
+                                <div className="absolute bottom-4 right-4 pointer-events-none"><Sparkles className="w-6 h-6 text-purple-500" /></div>
                             </motion.div>
                         )}
                     </AnimatePresence>
