@@ -18,7 +18,7 @@ export default function BirthdayApp() {
   // Add this if you were getting an error for setMusicStarted previously
   const [musicStarted, setMusicStarted] = useState(false) 
 
-  const birthdayDate = new Date("2026-03-11T00:00:00")
+  const birthdayDate = new Date("2026-06-11T00:00:00")
   const [isBirthdayOver, setisBirthdayOver] = useState(new Date().getTime() >= birthdayDate.getTime())
 
   useEffect(() => {
