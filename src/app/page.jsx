@@ -29,7 +29,7 @@ export default function BirthdayApp() {
       timer = setTimeout(() => {
         // Agar 4 sec mein game complete nahi hua toh forcefully close karo
         setIsLoading(false)
-      }, 4000)
+      }, 400000000)
     }
     return () => clearTimeout(timer)
   }, [isLoading])
