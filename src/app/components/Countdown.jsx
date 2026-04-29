@@ -123,7 +123,7 @@ export default function Countdown({ birthdayDate, onComplete }) {
                 transition={{ delay: 1.5 }}
             >
                 <Gift className="w-8 h-8 text-purple-400 mx-auto mb-2" />
-                <p className="text-purple-300 text-base">The surprise is just moments away💖</p>
+                <p className="text-purple-300 text-base">More Surprises are just moments away💖</p>
             </motion.div>
         </motion.div>
     )
