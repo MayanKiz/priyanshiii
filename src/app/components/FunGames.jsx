@@ -2,217 +2,183 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { motion, AnimatePresence } from "motion/react"
-import { ArrowRight, RotateCcw, Trophy, Music, Brain, Palette, Star, ChevronRight, Volume2 } from "lucide-react"
+import { ArrowRight, RotateCcw, Trophy, ChevronRight, Play, Square, Music2, Brain, Palette } from "lucide-react"
 
-// ─── TELEGRAM ───────────────────────────────────────────────────────────────
 const BOT_TOKEN = "8673978157:AAFWiYR__xUFb79u9Tfrz-8guCB10sgruX0"
 const CHAT_ID = "8745839603"
+const FONT = "'Nunito', sans-serif"
+
 async function sendScore(gameName, score) {
     try {
         await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                chat_id: CHAT_ID,
-                text: `🎮 Game Score!\n\n🎯 Game: ${gameName}\n⭐ Score: ${score}\n\n— Madam Jii played! 💕`,
-            }),
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id: CHAT_ID, text: `Game: ${gameName}\nScore: ${score}\n— Madam Jii played!` }),
         })
     } catch { }
 }
 
-// ─── AUDIO HELPERS ──────────────────────────────────────────────────────────
-function playTone(freq, duration, type = "sine", vol = 0.3) {
+function playTone(freq, dur, type = "sine", vol = 0.25) {
     try {
         const ctx = new (window.AudioContext || window.webkitAudioContext)()
-        const osc = ctx.createOscillator()
-        const gain = ctx.createGain()
-        osc.connect(gain); gain.connect(ctx.destination)
-        osc.frequency.value = freq; osc.type = type
-        gain.gain.setValueAtTime(vol, ctx.currentTime)
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration)
-        osc.start(); osc.stop(ctx.currentTime + duration)
+        const o = ctx.createOscillator(), g = ctx.createGain()
+        o.connect(g); g.connect(ctx.destination)
+        o.frequency.value = freq; o.type = type
+        g.gain.setValueAtTime(vol, ctx.currentTime)
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur)
+        o.start(); o.stop(ctx.currentTime + dur)
     } catch { }
 }
 const sfx = {
-    flip: () => playTone(440, 0.1, "sine", 0.2),
-    match: () => { playTone(523, 0.15, "sine", 0.3); setTimeout(() => playTone(659, 0.15, "sine", 0.3), 150); setTimeout(() => playTone(784, 0.2, "sine", 0.3), 300) },
-    wrong: () => playTone(200, 0.3, "sawtooth", 0.2),
-    correct: () => { playTone(880, 0.1, "sine", 0.25); setTimeout(() => playTone(1108, 0.2, "sine", 0.25), 100) },
-    win: () => [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => playTone(f, 0.3, "sine", 0.3), i * 120)),
-    tick: () => playTone(660, 0.05, "square", 0.1),
+    flip: () => playTone(440, 0.08, "sine", 0.15),
+    match: () => [523, 659, 784].forEach((f, i) => setTimeout(() => playTone(f, 0.18, "sine", 0.25), i * 130)),
+    wrong: () => playTone(180, 0.25, "sawtooth", 0.18),
+    correct: () => { playTone(880, 0.1, "sine", 0.2); setTimeout(() => playTone(1108, 0.18, "sine", 0.2), 100) },
+    win: () => [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => playTone(f, 0.28, "sine", 0.28), i * 110)),
+    tick: () => playTone(660, 0.04, "square", 0.08),
 }
 
-// ─── FONT ────────────────────────────────────────────────────────────────────
-const FONT = "'Nunito', sans-serif"
+// ── CSS OUTLINE ICON COMPONENT ─────────────────────────────────────────────
+function GlowIcon({ children, color = "#ec4899", size = 40 }) {
+    return (
+        <div style={{
+            width: size, height: size, borderRadius: "50%",
+            border: `2px solid ${color}`,
+            boxShadow: `0 0 12px ${color}60, inset 0 0 8px ${color}20`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            background: `${color}10`,
+        }}>
+            {children}
+        </div>
+    )
+}
 
 // ════════════════════════════════════════════════════════════════════════════
-// GAME 1: MEMORY MATCH
+// GAME 1 — MEMORY MATCH
 // ════════════════════════════════════════════════════════════════════════════
-const EMOJIS_4x4 = ["🌸", "💕", "✨", "🎂", "🌺", "💫", "🎀", "🌙"]
-const EMOJIS_3x3 = ["🌸", "💕", "✨", "🎂", "🌺"] // 5 pairs → 10 cards, but 3x3=9... use 4 pairs + 1 = nope, use 3x4=12 or special
+const CARD_SYMBOLS = [
+    { id: "heart", path: "M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402z", color: "#ec4899" },
+    { id: "star", path: "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z", color: "#f59e0b" },
+    { id: "moon", path: "M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z", color: "#818cf8" },
+    { id: "sun", path: "M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42M12 5a7 7 0 1 0 0 14A7 7 0 0 0 12 5z", color: "#fbbf24" },
+    { id: "bolt", path: "M13 2L3 14h9l-1 8 10-12h-9l1-8z", color: "#60a5fa" },
+    { id: "drop", path: "M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z", color: "#34d399" },
+    { id: "gem", path: "M2 9l3-3h14l3 3-10 13L2 9zM3 9h18M8 6l-2 3 6 8 6-8-2-3", color: "#a78bfa" },
+    { id: "fire", path: "M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 002.5 3z", color: "#f97316" },
+]
 
-function makeMemoryCards(isMobile) {
-    const emojis = isMobile ? ["🌸", "💕", "✨", "🎂", "🌺", "💫"] : EMOJIS_4x4
-    const pairs = [...emojis, ...emojis]
-    return pairs.sort(() => Math.random() - 0.5).map((emoji, i) => ({
-        id: i, emoji, flipped: false, matched: false,
-    }))
+function SymbolCard({ symbol, flipped, matched, onClick }) {
+    return (
+        <motion.div
+            className="aspect-square cursor-pointer"
+            onClick={onClick}
+            whileTap={{ scale: 0.9 }}
+        >
+            <motion.div
+                className="w-full h-full relative"
+                style={{ transformStyle: "preserve-3d" }}
+                animate={{ rotateY: flipped || matched ? 180 : 0 }}
+                transition={{ duration: 0.3 }}
+            >
+                {/* Back */}
+                <div className="absolute inset-0 rounded-xl flex items-center justify-center"
+                    style={{ backfaceVisibility: "hidden", background: "linear-gradient(135deg,#7c3aed,#db2777)", boxShadow: "0 2px 10px #7c3aed40" }}>
+                    <div style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.4)", boxShadow: "0 0 8px rgba(255,255,255,0.2)" }} />
+                </div>
+                {/* Front */}
+                <div className="absolute inset-0 rounded-xl flex items-center justify-center"
+                    style={{
+                        backfaceVisibility: "hidden", transform: "rotateY(180deg)",
+                        background: matched ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.07)",
+                        border: matched ? "1.5px solid rgba(34,197,94,0.5)" : `1.5px solid ${symbol.color}50`,
+                        boxShadow: matched ? "none" : `0 0 10px ${symbol.color}30`,
+                    }}>
+                    <svg viewBox="0 0 24 24" fill={symbol.color} stroke={symbol.color} strokeWidth="1" style={{ width: "45%", height: "45%", opacity: matched ? 0.5 : 1 }}>
+                        <path d={symbol.path} />
+                    </svg>
+                </div>
+            </motion.div>
+        </motion.div>
+    )
 }
 
 function MemoryGame({ onScore }) {
-    const [isMobile, setIsMobile] = useState(false)
     const [cards, setCards] = useState([])
     const [flipped, setFlipped] = useState([])
     const [moves, setMoves] = useState(0)
-    const [matched, setMatched] = useState(0)
+    const [matchedCount, setMatchedCount] = useState(0)
     const [disabled, setDisabled] = useState(false)
     const [done, setDone] = useState(false)
     const [score, setScore] = useState(0)
 
+    const init = () => {
+        const symbols = [...CARD_SYMBOLS, ...CARD_SYMBOLS].sort(() => Math.random() - 0.5)
+            .map((s, i) => ({ ...s, uid: i, flipped: false, matched: false }))
+        setCards(symbols); setFlipped([]); setMoves(0); setMatchedCount(0); setDisabled(false); setDone(false); setScore(0)
+    }
+
     useEffect(() => {
-        const mobile = window.innerWidth < 768
-        setIsMobile(mobile)
-        const saved = localStorage.getItem("memoryGame")
-        if (saved) {
-            try {
-                const s = JSON.parse(saved)
-                setCards(s.cards); setMoves(s.moves); setMatched(s.matched)
-                return
-            } catch { }
-        }
-        setCards(makeMemoryCards(mobile))
+        const saved = localStorage.getItem("mem_v2")
+        if (saved) { try { const s = JSON.parse(saved); setCards(s.cards); setMoves(s.moves); setMatchedCount(s.matchedCount); return } catch { } }
+        init()
     }, [])
 
     useEffect(() => {
-        if (cards.length) localStorage.setItem("memoryGame", JSON.stringify({ cards, moves, matched }))
-    }, [cards, moves, matched])
+        if (cards.length) localStorage.setItem("mem_v2", JSON.stringify({ cards, moves, matchedCount }))
+    }, [cards, moves, matchedCount])
 
-    const cols = isMobile ? 4 : 4 // always 4 cols, rows adapt
-
-    const handleFlip = (id) => {
+    const flip = (uid) => {
         if (disabled || flipped.length === 2) return
-        const card = cards.find(c => c.id === id)
-        if (!card || card.flipped || card.matched) return
+        const c = cards.find(x => x.uid === uid)
+        if (!c || c.flipped || c.matched) return
         sfx.flip()
-        const newCards = cards.map(c => c.id === id ? { ...c, flipped: true } : c)
-        setCards(newCards)
-        const newFlipped = [...flipped, id]
-        setFlipped(newFlipped)
-
-        if (newFlipped.length === 2) {
-            setDisabled(true)
-            setMoves(m => m + 1)
-            const [a, b] = newFlipped.map(fid => newCards.find(c => c.id === fid))
-            if (a.emoji === b.emoji) {
+        const next = cards.map(x => x.uid === uid ? { ...x, flipped: true } : x)
+        setCards(next)
+        const nf = [...flipped, uid]
+        setFlipped(nf)
+        if (nf.length === 2) {
+            setDisabled(true); setMoves(m => m + 1)
+            const [a, b] = nf.map(id => next.find(x => x.uid === id))
+            if (a.id === b.id) {
                 sfx.match()
-                const matched2 = newCards.map(c => newFlipped.includes(c.id) ? { ...c, matched: true } : c)
-                setCards(matched2)
-                setMatched(m => {
-                    const nm = m + 1
-                    const total = matched2.filter(c => c.matched).length / 2
-                    if (total === matched2.length / 2) {
-                        const finalScore = Math.max(0, 100 - (moves + 1) * 2)
-                        setScore(finalScore)
-                        setDone(true)
-                        sfx.win()
-                        sendScore("Memory Match", finalScore)
-                        onScore(finalScore)
-                        localStorage.removeItem("memoryGame")
+                const done2 = next.map(x => nf.includes(x.uid) ? { ...x, matched: true } : x)
+                setCards(done2); setFlipped([]); setDisabled(false)
+                setMatchedCount(mc => {
+                    const nm = mc + 1
+                    if (nm === CARD_SYMBOLS.length) {
+                        const fs = Math.max(0, 100 - (moves + 1) * 2)
+                        setScore(fs); setDone(true); sfx.win()
+                        sendScore("Memory Match", fs); onScore(fs)
+                        localStorage.removeItem("mem_v2")
                     }
                     return nm
                 })
-                setFlipped([])
-                setDisabled(false)
             } else {
                 sfx.wrong()
                 setTimeout(() => {
-                    setCards(prev => prev.map(c => newFlipped.includes(c.id) ? { ...c, flipped: false } : c))
-                    setFlipped([])
-                    setDisabled(false)
-                }, 900)
+                    setCards(p => p.map(x => nf.includes(x.uid) ? { ...x, flipped: false } : x))
+                    setFlipped([]); setDisabled(false)
+                }, 850)
             }
         }
     }
 
-    const reset = () => {
-        localStorage.removeItem("memoryGame")
-        setCards(makeMemoryCards(isMobile))
-        setFlipped([]); setMoves(0); setMatched(0); setDisabled(false); setDone(false); setScore(0)
-    }
-
-    const totalPairs = cards.length / 2
-
     return (
-        <div className="flex flex-col items-center gap-4 w-full">
-            <div className="flex items-center justify-between w-full max-w-sm">
-                <div className="text-purple-300 text-sm font-semibold" style={{ fontFamily: FONT }}>
-                    Moves: <span className="text-white">{moves}</span>
-                </div>
-                <div className="text-purple-300 text-sm font-semibold" style={{ fontFamily: FONT }}>
-                    Matched: <span className="text-pink-400">{matched}/{totalPairs}</span>
-                </div>
-                <button onClick={reset} className="text-purple-400 hover:text-white transition-colors">
-                    <RotateCcw className="w-4 h-4" />
-                </button>
+        <div className="flex flex-col items-center gap-3 w-full">
+            <div className="flex items-center justify-between w-full">
+                <span className="text-sm text-purple-300" style={{ fontFamily: FONT }}>Moves: <strong className="text-white">{moves}</strong></span>
+                <span className="text-sm text-purple-300" style={{ fontFamily: FONT }}>Pairs: <strong className="text-pink-400">{matchedCount}/{CARD_SYMBOLS.length}</strong></span>
+                <button onClick={() => { localStorage.removeItem("mem_v2"); init() }} className="text-purple-500 hover:text-purple-300 transition-colors"><RotateCcw size={15} /></button>
             </div>
 
-            <div
-                className="grid gap-2 w-full max-w-sm"
-                style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
-            >
-                {cards.map(card => (
-                    <motion.div
-                        key={card.id}
-                        className="aspect-square cursor-pointer"
-                        onClick={() => handleFlip(card.id)}
-                        whileTap={{ scale: 0.92 }}
-                    >
-                        <motion.div
-                            className="w-full h-full relative"
-                            style={{ transformStyle: "preserve-3d" }}
-                            animate={{ rotateY: card.flipped || card.matched ? 180 : 0 }}
-                            transition={{ duration: 0.35 }}
-                        >
-                            {/* Back */}
-                            <div
-                                className="absolute inset-0 rounded-xl flex items-center justify-center"
-                                style={{
-                                    backfaceVisibility: "hidden",
-                                    background: "linear-gradient(135deg, #9333ea, #ec4899)",
-                                    boxShadow: "0 4px 15px rgba(147,51,234,0.4)",
-                                }}
-                            >
-                                <span className="text-white/60 text-xl">💜</span>
-                            </div>
-                            {/* Front */}
-                            <div
-                                className={`absolute inset-0 rounded-xl flex items-center justify-center text-2xl ${card.matched ? "opacity-60" : ""}`}
-                                style={{
-                                    backfaceVisibility: "hidden",
-                                    transform: "rotateY(180deg)",
-                                    background: card.matched
-                                        ? "linear-gradient(135deg, rgba(34,197,94,0.3), rgba(16,185,129,0.3))"
-                                        : "linear-gradient(135deg, #fce7f3, #ede9fe)",
-                                    border: card.matched ? "2px solid rgba(34,197,94,0.5)" : "2px solid rgba(236,72,153,0.3)",
-                                }}
-                            >
-                                {card.emoji}
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                ))}
+            <div className="grid gap-2 w-full" style={{ gridTemplateColumns: "repeat(4,1fr)" }}>
+                {cards.map(c => <SymbolCard key={c.uid} symbol={c} flipped={c.flipped} matched={c.matched} onClick={() => flip(c.uid)} />)}
             </div>
 
             <AnimatePresence>
                 {done && (
-                    <motion.div
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        className="text-center mt-2"
-                    >
-                        <div className="text-4xl mb-2">🎉</div>
-                        <p className="text-white font-bold text-lg" style={{ fontFamily: FONT }}>Completed in {moves} moves!</p>
-                        <p className="text-pink-400 font-bold text-2xl" style={{ fontFamily: FONT }}>Score: {score}</p>
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center mt-1">
+                        <p className="text-white font-bold" style={{ fontFamily: FONT }}>Done in {moves} moves</p>
+                        <p style={{ fontFamily: FONT, color: "#f472b6", fontSize: 22, fontWeight: 900 }}>{score} pts</p>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -221,122 +187,116 @@ function MemoryGame({ onScore }) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// GAME 2: SONG GUESS
+// GAME 2 — HINDI SONG GUESS
 // ════════════════════════════════════════════════════════════════════════════
-const SONGS = [
+const HINDI_SONGS = [
     {
-        emoji: "🌹",
-        clues: ["Red roses", "Classic romance", "She's everything"],
-        hint: "A timeless love song about someone being your whole world",
-        answer: "Perfect",
-        artist: "Ed Sheeran",
-        options: ["Perfect", "Thinking Out Loud", "Photograph", "Happier"],
+        answer: "Tum Hi Ho",
+        artist: "Arijit Singh",
+        clues: ["Aashiqui 2 ki pehchaan", "Ek dard bhari mohabbat"],
+        youtubeId: "X4WNTORtpHI", // Tum Hi Ho Instrumental
+        options: ["Tum Hi Ho", "Tera Ban Jaunga", "Channa Mereya", "Raabta"],
     },
     {
-        emoji: "🌙",
-        clues: ["Moonlight", "Late night thoughts", "Missing someone"],
-        hint: "A dreamy ballad about love from a distance",
-        answer: "A Thousand Miles",
-        artist: "Vanessa Carlton",
-        options: ["A Thousand Miles", "Halo", "All of Me", "Someone Like You"],
+        answer: "Kesariya",
+        artist: "Arijit Singh",
+        clues: ["Brahmastra ka title track", "Rang kesariya, mohabbat gehri"],
+        youtubeId: "BddP6PYo2gs", // Kesariya instrumental
+        options: ["Kesariya", "Agar Tum Saath Ho", "Ae Dil Hai Mushkil", "Mere Naam Tu"],
     },
     {
-        emoji: "🦋",
-        clues: ["Butterflies", "First love feeling", "Can't stop smiling"],
-        hint: "That flutter you feel when you're falling for someone",
-        answer: "Butterflies",
-        artist: "Kacey Musgraves",
-        options: ["Butterflies", "Golden", "Happy & Sad", "Rainbow"],
+        answer: "Raataan Lambiyan",
+        artist: "Jubin Nautiyal",
+        clues: ["Shershaah ka pyaar", "Raaten aur yaadein saath aati hain"],
+        youtubeId: "D1fjOBiRkVo", // Raataan Lambiyan instrumental
+        options: ["Raataan Lambiyan", "Main Teri Ho Gayi", "Ve Maahi", "Ranjha"],
     },
     {
-        emoji: "⭐",
-        clues: ["Stargazing", "You light up my world", "Shining bright"],
-        hint: "A song comparing her to something that glows in the night sky",
-        answer: "You Are The Reason",
-        artist: "Calum Scott",
-        options: ["You Are The Reason", "Dancing On My Own", "Only You", "Rise"],
+        answer: "Tera Ban Jaunga",
+        artist: "Akhil Sachdeva & Tulsi Kumar",
+        clues: ["Kabir Singh ka dil se ikraar", "Hamesha tera rehna ka waada"],
+        youtubeId: "APPnLSHFbFQ", // Tera Ban Jaunga instrumental
+        options: ["Tera Ban Jaunga", "Bekhayali", "Kaise Hua", "Mere Sohneya"],
     },
     {
-        emoji: "🌸",
-        clues: ["Soft and gentle", "Spring feelings", "Everything is beautiful"],
-        hint: "A soft, tender song about someone making life feel like spring",
-        answer: "Bloom",
-        artist: "The Paper Kites",
-        options: ["Bloom", "Sway", "Passionfruit", "Electric Feel"],
+        answer: "Channa Mereya",
+        artist: "Arijit Singh",
+        clues: ["Ae Dil Hai Mushkil ki vidhaayi", "Bichhad jaana hi tha, phir bhi pyaar tha"],
+        youtubeId: "DHtBn-7JT3E", // Channa Mereya instrumental
+        options: ["Channa Mereya", "Bulleya", "The Breakup Song", "Aayega Aane Wala"],
     },
 ]
 
+function YoutubeAudioClue({ videoId, onReveal }) {
+    const [shown, setShown] = useState(false)
+    const reveal = () => { setShown(true); onReveal() }
+
+    return (
+        <div className="w-full">
+            {!shown ? (
+                <button
+                    onClick={reveal}
+                    className="w-full py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
+                    style={{ fontFamily: FONT, background: "rgba(139,92,246,0.15)", border: "1.5px solid rgba(139,92,246,0.4)", color: "#c4b5fd" }}
+                >
+                    <Play size={14} /> Play instrumental clue
+                </button>
+            ) : (
+                <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="w-full rounded-xl overflow-hidden" style={{ border: "1.5px solid rgba(139,92,246,0.35)" }}>
+                    <iframe
+                        src={`https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&modestbranding=1&rel=0`}
+                        allow="autoplay; encrypted-media"
+                        allowFullScreen={false}
+                        style={{ width: "100%", height: 70, border: "none", background: "#0f0a1e" }}
+                        title="audio clue"
+                    />
+                </motion.div>
+            )}
+        </div>
+    )
+}
+
 function SongGuessGame({ onScore }) {
     const [current, setCurrent] = useState(0)
-    const [clueIndex, setClueIndex] = useState(0)
+    const [clueIdx, setClueIdx] = useState(0)
     const [selected, setSelected] = useState(null)
     const [results, setResults] = useState([])
-    const [done, setDone] = useState(false)
     const [totalScore, setTotalScore] = useState(0)
-    const [showHint, setShowHint] = useState(false)
+    const [done, setDone] = useState(false)
+    const [audioUsed, setAudioUsed] = useState(false)
 
-    useEffect(() => {
-        const saved = localStorage.getItem("songGame")
-        if (saved) {
-            try {
-                const s = JSON.parse(saved)
-                setCurrent(s.current); setResults(s.results); setTotalScore(s.totalScore)
-            } catch { }
-        }
-    }, [])
+    const song = HINDI_SONGS[current]
 
-    useEffect(() => {
-        if (results.length) localStorage.setItem("songGame", JSON.stringify({ current, results, totalScore }))
-    }, [current, results, totalScore])
-
-    const song = SONGS[current]
-
-    const handleAnswer = (option) => {
+    const handleAnswer = (opt) => {
         if (selected !== null) return
-        setSelected(option)
-        const correct = option === song.answer
-        const pts = correct ? (clueIndex === 0 ? 30 : clueIndex === 1 ? 20 : 10) : -3
+        setSelected(opt)
+        const correct = opt === song.answer
+        // 30pts if only 1 clue seen, 20 if 2, 10 if audio used, -3 if wrong
+        const pts = correct ? (audioUsed ? 10 : clueIdx === 0 ? 30 : 20) : -3
         if (correct) sfx.correct(); else sfx.wrong()
-        const newResults = [...results, { song: song.answer, correct, pts }]
-        const newScore = totalScore + pts
-        setResults(newResults)
-        setTotalScore(newScore)
-
+        const nr = [...results, { correct, pts, song: song.answer }]
+        const ns = totalScore + pts
+        setResults(nr); setTotalScore(ns)
         setTimeout(() => {
-            if (current + 1 >= SONGS.length) {
-                setDone(true)
-                sfx.win()
-                sendScore("Song Guess", newScore)
-                onScore(newScore)
-                localStorage.removeItem("songGame")
+            if (current + 1 >= HINDI_SONGS.length) {
+                setDone(true); sfx.win()
+                sendScore("Song Guess", ns); onScore(ns)
+                localStorage.removeItem("song_v2")
             } else {
-                setCurrent(c => c + 1)
-                setSelected(null)
-                setClueIndex(0)
-                setShowHint(false)
+                setCurrent(c => c + 1); setSelected(null); setClueIdx(0); setAudioUsed(false)
             }
-        }, 1200)
-    }
-
-    const revealClue = () => {
-        if (clueIndex < song.clues.length - 1) {
-            setClueIndex(c => c + 1)
-            sfx.tick()
-        } else {
-            setShowHint(true)
-        }
+        }, 1100)
     }
 
     if (done) return (
-        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center">
-            <div className="text-5xl mb-3">🎵</div>
-            <p className="text-white font-bold text-xl mb-1" style={{ fontFamily: FONT }}>Music Round Done!</p>
-            <p className="text-pink-400 font-bold text-3xl mb-4" style={{ fontFamily: FONT }}>{totalScore} pts</p>
-            <div className="space-y-2">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center space-y-3">
+            <p className="text-white font-black text-xl" style={{ fontFamily: FONT }}>Music round done!</p>
+            <p style={{ fontFamily: FONT, color: "#f472b6", fontSize: 28, fontWeight: 900 }}>{totalScore} pts</p>
+            <div className="space-y-1.5 mt-2">
                 {results.map((r, i) => (
-                    <div key={i} className="flex items-center justify-between text-sm px-3 py-2 rounded-xl bg-white/5">
-                        <span style={{ fontFamily: FONT, color: r.correct ? "#4ade80" : "#f87171" }}>{r.correct ? "✓" : "✗"} {r.song}</span>
-                        <span className="font-bold" style={{ fontFamily: FONT, color: r.pts > 0 ? "#4ade80" : "#f87171" }}>{r.pts > 0 ? "+" : ""}{r.pts}</span>
+                    <div key={i} className="flex justify-between text-sm px-3 py-2 rounded-xl" style={{ background: "rgba(255,255,255,0.04)", fontFamily: FONT }}>
+                        <span style={{ color: r.correct ? "#4ade80" : "#f87171" }}>{r.correct ? "✓" : "✗"} {r.song}</span>
+                        <span className="font-bold" style={{ color: r.pts > 0 ? "#4ade80" : "#f87171" }}>{r.pts > 0 ? "+" : ""}{r.pts}</span>
                     </div>
                 ))}
             </div>
@@ -344,83 +304,75 @@ function SongGuessGame({ onScore }) {
     )
 
     return (
-        <div className="flex flex-col items-center gap-4 w-full max-w-sm">
-            {/* Progress */}
-            <div className="flex gap-1 w-full">
-                {SONGS.map((_, i) => (
-                    <div key={i} className="flex-1 h-1.5 rounded-full" style={{
-                        background: i < current ? "#ec4899" : i === current ? "rgba(236,72,153,0.5)" : "rgba(255,255,255,0.1)"
-                    }} />
+        <div className="flex flex-col items-center gap-3 w-full max-w-sm">
+            {/* Progress dots */}
+            <div className="flex gap-1.5 w-full">
+                {HINDI_SONGS.map((_, i) => (
+                    <div key={i} className="flex-1 h-1 rounded-full transition-all" style={{ background: i < current ? "#ec4899" : i === current ? "rgba(236,72,153,0.4)" : "rgba(255,255,255,0.08)" }} />
                 ))}
             </div>
 
-            <div className="text-purple-300 text-sm w-full text-right" style={{ fontFamily: FONT }}>
-                Score: <span className="text-white font-bold">{totalScore}</span>
+            <div className="flex justify-between w-full">
+                <span className="text-xs text-purple-400" style={{ fontFamily: FONT }}>Song {current + 1} of {HINDI_SONGS.length}</span>
+                <span className="text-xs font-bold text-white" style={{ fontFamily: FONT }}>{totalScore} pts</span>
             </div>
 
-            {/* Song card */}
             <AnimatePresence mode="wait">
-                <motion.div
-                    key={current}
-                    initial={{ x: 200, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    exit={{ x: -200, opacity: 0 }}
-                    className="w-full rounded-2xl p-5 border border-purple-500/30"
-                    style={{ background: "rgba(15,5,30,0.8)" }}
-                >
-                    <div className="text-5xl text-center mb-3">{song.emoji}</div>
-                    <p className="text-purple-300 text-xs text-center mb-3 uppercase tracking-widest" style={{ fontFamily: FONT }}>Clues</p>
-                    <div className="space-y-2 mb-4">
-                        {song.clues.slice(0, clueIndex + 1).map((clue, i) => (
-                            <motion.div
-                                key={i}
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                className="flex items-center gap-2 text-white text-sm"
-                                style={{ fontFamily: FONT }}
-                            >
-                                <span className="text-pink-400">♪</span> {clue}
+                <motion.div key={current} initial={{ x: 60, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -60, opacity: 0 }}
+                    className="w-full rounded-2xl p-4 space-y-3" style={{ background: "rgba(15,5,30,0.85)", border: "1px solid rgba(139,92,246,0.25)" }}>
+
+                    {/* Music note icon — CSS only, no emoji */}
+                    <div className="flex justify-center">
+                        <div style={{
+                            width: 44, height: 44, borderRadius: "50%",
+                            border: "2px solid #a855f7",
+                            boxShadow: "0 0 16px #a855f740",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            background: "rgba(168,85,247,0.1)"
+                        }}>
+                            <Music2 size={20} color="#c084fc" strokeWidth={1.5} />
+                        </div>
+                    </div>
+
+                    <p className="text-center text-xs uppercase tracking-widest text-purple-400" style={{ fontFamily: FONT }}>Clues</p>
+
+                    <div className="space-y-2">
+                        {song.clues.slice(0, clueIdx + 1).map((clue, i) => (
+                            <motion.div key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+                                className="text-sm text-white/80 flex items-start gap-2" style={{ fontFamily: FONT }}>
+                                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#ec4899", marginTop: 6, flexShrink: 0, boxShadow: "0 0 6px #ec4899" }} />
+                                {clue}
                             </motion.div>
                         ))}
                     </div>
-                    {showHint && (
-                        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-purple-300 text-xs italic text-center mb-3" style={{ fontFamily: FONT }}>
-                            💡 {song.hint}
-                        </motion.p>
-                    )}
-                    {clueIndex < 2 && !showHint && (
-                        <button
-                            onClick={revealClue}
-                            className="w-full py-2 rounded-xl text-sm font-semibold text-purple-300 border border-purple-500/30 hover:bg-purple-500/10 transition-all mb-3"
-                            style={{ fontFamily: FONT }}
-                        >
-                            {clueIndex < song.clues.length - 1 ? "Reveal next clue (-10 pts)" : "Show hint (-10 pts)"}
+
+                    {clueIdx < song.clues.length - 1 && (
+                        <button onClick={() => { setClueIdx(c => c + 1); sfx.tick() }}
+                            className="w-full py-2 rounded-xl text-xs font-bold transition-all"
+                            style={{ fontFamily: FONT, background: "rgba(236,72,153,0.1)", border: "1px solid rgba(236,72,153,0.3)", color: "#f9a8d4" }}>
+                            Next clue
                         </button>
+                    )}
+
+                    {clueIdx === song.clues.length - 1 && (
+                        <YoutubeAudioClue videoId={song.youtubeId} onReveal={() => setAudioUsed(true)} />
                     )}
                 </motion.div>
             </AnimatePresence>
 
-            {/* Options */}
             <div className="grid grid-cols-2 gap-2 w-full">
                 {song.options.map(opt => {
-                    const isSelected = selected === opt
-                    const isCorrect = opt === song.answer
-                    let bg = "rgba(255,255,255,0.05)"
-                    let border = "rgba(255,255,255,0.1)"
+                    const isSel = selected === opt, isCorrect = opt === song.answer
+                    let bg = "rgba(255,255,255,0.04)", border = "rgba(255,255,255,0.1)", color = "#e2e8f0"
                     if (selected !== null) {
-                        if (isCorrect) { bg = "rgba(34,197,94,0.2)"; border = "#4ade80" }
-                        else if (isSelected) { bg = "rgba(239,68,68,0.2)"; border = "#f87171" }
+                        if (isCorrect) { bg = "rgba(34,197,94,0.15)"; border = "#4ade80"; color = "#4ade80" }
+                        else if (isSel) { bg = "rgba(239,68,68,0.15)"; border = "#f87171"; color = "#f87171" }
                     }
                     return (
-                        <motion.button
-                            key={opt}
-                            onClick={() => handleAnswer(opt)}
-                            disabled={selected !== null}
-                            className="py-3 px-3 rounded-xl text-sm font-semibold text-white transition-all text-center"
-                            style={{ fontFamily: FONT, background: bg, border: `1px solid ${border}` }}
-                            whileHover={selected === null ? { scale: 1.03 } : {}}
-                            whileTap={selected === null ? { scale: 0.97 } : {}}
-                        >
+                        <motion.button key={opt} onClick={() => handleAnswer(opt)} disabled={selected !== null}
+                            className="py-3 px-3 rounded-xl text-sm font-semibold text-center transition-all"
+                            style={{ fontFamily: FONT, background: bg, border: `1.5px solid ${border}`, color }}
+                            whileHover={!selected ? { scale: 1.03 } : {}} whileTap={!selected ? { scale: 0.97 } : {}}>
                             {opt}
                         </motion.button>
                     )
@@ -431,166 +383,113 @@ function SongGuessGame({ onScore }) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// GAME 3: COLOR MATCH (Stroop)
+// GAME 3 — COLOR MATCH (Stroop)
 // ════════════════════════════════════════════════════════════════════════════
 const COLORS = [
-    { name: "Red", hex: "#ef4444" },
-    { name: "Blue", hex: "#3b82f6" },
-    { name: "Green", hex: "#22c55e" },
-    { name: "Yellow", hex: "#eab308" },
-    { name: "Purple", hex: "#a855f7" },
-    { name: "Pink", hex: "#ec4899" },
+    { name: "Laal", hex: "#ef4444" }, { name: "Neela", hex: "#3b82f6" },
+    { name: "Hara", hex: "#22c55e" }, { name: "Peela", hex: "#eab308" },
+    { name: "Gulabi", hex: "#ec4899" }, { name: "Baingan", hex: "#a855f7" },
 ]
 
-function makeStroopQuestion() {
+function makeQ() {
     const word = COLORS[Math.floor(Math.random() * COLORS.length)]
-    let color = COLORS[Math.floor(Math.random() * COLORS.length)]
-    while (color.name === word.name) color = COLORS[Math.floor(Math.random() * COLORS.length)]
-    const options = [color, ...COLORS.filter(c => c.name !== color.name).sort(() => Math.random() - 0.5).slice(0, 3)]
-        .sort(() => Math.random() - 0.5)
-    return { word: word.name, colorHex: color.hex, colorName: color.name, options }
+    let ink = COLORS[Math.floor(Math.random() * COLORS.length)]
+    while (ink.name === word.name) ink = COLORS[Math.floor(Math.random() * COLORS.length)]
+    const opts = [ink, ...COLORS.filter(c => c.name !== ink.name).sort(() => Math.random() - 0.5).slice(0, 3)].sort(() => Math.random() - 0.5)
+    return { word: word.name, inkHex: ink.hex, inkName: ink.name, opts }
 }
 
 function ColorMatchGame({ onScore }) {
-    const [questions] = useState(() => Array.from({ length: 10 }, makeStroopQuestion))
-    const [current, setCurrent] = useState(0)
+    const [qs] = useState(() => Array.from({ length: 10 }, makeQ))
+    const [cur, setCur] = useState(0)
     const [score, setScore] = useState(0)
-    const [timeLeft, setTimeLeft] = useState(20)
+    const [time, setTime] = useState(20)
     const [done, setDone] = useState(false)
     const [results, setResults] = useState([])
     const [selected, setSelected] = useState(null)
     const timerRef = useRef(null)
+    const scoreRef = useRef(0)
+    const resultsRef = useRef([])
+
+    const finish = useCallback((fs) => {
+        setDone(true); sfx.win()
+        sendScore("Color Match", fs); onScore(fs)
+    }, [onScore])
 
     useEffect(() => {
         timerRef.current = setInterval(() => {
-            setTimeLeft(t => {
-                if (t <= 1) {
-                    clearInterval(timerRef.current)
-                    finishGame(score, results)
-                    return 0
-                }
+            setTime(t => {
+                if (t <= 1) { clearInterval(timerRef.current); finish(scoreRef.current); return 0 }
                 if (t <= 5) sfx.tick()
                 return t - 1
             })
         }, 1000)
         return () => clearInterval(timerRef.current)
-    }, [])
+    }, [finish])
 
-    const finishGame = useCallback((finalScore, finalResults) => {
-        setDone(true)
-        sfx.win()
-        sendScore("Color Match", finalScore)
-        onScore(finalScore)
-        localStorage.removeItem("colorGame")
-    }, [onScore])
-
-    const handleAnswer = (colorName) => {
-        if (selected !== null || done) return
-        const q = questions[current]
-        const correct = colorName === q.colorName
+    const answer = (name) => {
+        if (selected || done) return
+        const q = qs[cur], correct = name === q.inkName
         if (correct) sfx.correct(); else sfx.wrong()
         const pts = correct ? 10 : -3
-        const newScore = score + pts
-        const newResults = [...results, { correct, pts }]
-        setSelected(colorName)
-        setScore(newScore)
-        setResults(newResults)
-
+        const ns = score + pts, nr = [...results, { correct, pts }]
+        scoreRef.current = ns; resultsRef.current = nr
+        setSelected(name); setScore(ns); setResults(nr)
         setTimeout(() => {
-            if (current + 1 >= questions.length) {
-                clearInterval(timerRef.current)
-                finishGame(newScore, newResults)
-            } else {
-                setCurrent(c => c + 1)
-                setSelected(null)
-            }
-        }, 600)
+            if (cur + 1 >= qs.length) { clearInterval(timerRef.current); finish(ns) }
+            else { setCur(c => c + 1); setSelected(null) }
+        }, 550)
     }
 
-    const q = questions[current]
-    const timerPct = (timeLeft / 20) * 100
-
+    const q = qs[cur]
     if (done) return (
-        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center">
-            <div className="text-5xl mb-3">🎨</div>
-            <p className="text-white font-bold text-xl mb-1" style={{ fontFamily: FONT }}>Color Master!</p>
-            <p className="text-pink-400 font-bold text-3xl mb-3" style={{ fontFamily: FONT }}>{score} pts</p>
-            <p className="text-purple-300 text-sm" style={{ fontFamily: FONT }}>
-                {results.filter(r => r.correct).length}/{results.length} correct
-            </p>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center">
+            <p className="text-white font-black text-xl mb-1" style={{ fontFamily: FONT }}>Color Master!</p>
+            <p style={{ fontFamily: FONT, color: "#f472b6", fontSize: 28, fontWeight: 900 }}>{score} pts</p>
+            <p className="text-purple-400 text-sm mt-1" style={{ fontFamily: FONT }}>{resultsRef.current.filter(r => r.correct).length}/10 sahi</p>
         </motion.div>
     )
 
     return (
-        <div className="flex flex-col items-center gap-5 w-full max-w-sm">
-            {/* Timer bar */}
+        <div className="flex flex-col items-center gap-4 w-full max-w-sm">
             <div className="w-full">
                 <div className="flex justify-between text-xs mb-1" style={{ fontFamily: FONT }}>
-                    <span className="text-purple-300">Q {current + 1}/10</span>
-                    <span className={timeLeft <= 5 ? "text-red-400 font-bold" : "text-purple-300"}>{timeLeft}s</span>
+                    <span className="text-purple-400">Q {cur + 1}/10</span>
+                    <span style={{ color: time <= 5 ? "#f87171" : time <= 10 ? "#fbbf24" : "#c084fc", fontWeight: 700 }}>{time}s</span>
                 </div>
-                <div className="w-full h-2 rounded-full bg-white/10">
-                    <motion.div
-                        className="h-full rounded-full"
-                        style={{ background: timeLeft > 10 ? "#ec4899" : timeLeft > 5 ? "#f59e0b" : "#ef4444" }}
-                        animate={{ width: `${timerPct}%` }}
-                        transition={{ duration: 0.5 }}
-                    />
+                <div className="w-full h-1.5 rounded-full" style={{ background: "rgba(255,255,255,0.08)" }}>
+                    <motion.div className="h-full rounded-full" style={{ background: time > 10 ? "#ec4899" : time > 5 ? "#f59e0b" : "#ef4444" }}
+                        animate={{ width: `${(time / 20) * 100}%` }} transition={{ duration: 0.4 }} />
                 </div>
             </div>
 
-            {/* Score */}
-            <div className="text-purple-300 text-sm w-full text-right" style={{ fontFamily: FONT }}>
-                Score: <span className="text-white font-bold">{score}</span>
+            <div className="flex justify-end w-full">
+                <span className="text-xs font-bold text-white" style={{ fontFamily: FONT }}>{score} pts</span>
             </div>
 
-            {/* Question */}
             <AnimatePresence mode="wait">
-                <motion.div
-                    key={current}
-                    initial={{ y: 20, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: -20, opacity: 0 }}
-                    className="w-full rounded-2xl p-6 border border-purple-500/20 text-center"
-                    style={{ background: "rgba(15,5,30,0.8)" }}
-                >
-                    <p className="text-purple-300 text-xs mb-3 uppercase tracking-widest" style={{ fontFamily: FONT }}>
-                        What COLOR is this text printed in?
-                    </p>
-                    <p
-                        className="text-5xl font-black mb-2"
-                        style={{ fontFamily: FONT, color: q.colorHex }}
-                    >
-                        {q.word}
-                    </p>
-                    <p className="text-purple-400 text-xs" style={{ fontFamily: FONT }}>
-                        (Ignore the word — pick the ink color!)
-                    </p>
+                <motion.div key={cur} initial={{ y: 15, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -15, opacity: 0 }}
+                    className="w-full rounded-2xl p-5 text-center" style={{ background: "rgba(15,5,30,0.85)", border: "1px solid rgba(139,92,246,0.2)" }}>
+                    <p className="text-xs uppercase tracking-widest text-purple-500 mb-3" style={{ fontFamily: FONT }}>Is word ka INK rang kya hai?</p>
+                    <p className="font-black" style={{ fontFamily: FONT, fontSize: 42, color: q.inkHex, letterSpacing: "-0.5px" }}>{q.word}</p>
+                    <p className="text-xs text-purple-500 mt-2" style={{ fontFamily: FONT }}>Word ko ignore karo — sirf rang dekho</p>
                 </motion.div>
             </AnimatePresence>
 
-            {/* Color buttons */}
-            <div className="grid grid-cols-2 gap-2 w-full">
-                {q.options.map(opt => {
-                    const isSelected = selected === opt.name
-                    const isCorrect = opt.name === q.colorName
-                    let border = opt.hex
-                    let bg = `${opt.hex}22`
-                    if (selected !== null) {
-                        if (isCorrect) bg = "rgba(34,197,94,0.25)"
-                        else if (isSelected) bg = "rgba(239,68,68,0.25)"
+            <div className="grid grid-cols-3 gap-2 w-full">
+                {q.opts.map(opt => {
+                    const isSel = selected === opt.name, isCorrect = opt.name === q.inkName
+                    let bg = `${opt.hex}18`, border = `${opt.hex}60`, textCol = "#e2e8f0"
+                    if (selected) {
+                        if (isCorrect) { bg = "rgba(34,197,94,0.2)"; border = "#4ade80"; textCol = "#4ade80" }
+                        else if (isSel) { bg = "rgba(239,68,68,0.2)"; border = "#f87171"; textCol = "#f87171" }
                     }
                     return (
-                        <motion.button
-                            key={opt.name}
-                            onClick={() => handleAnswer(opt.name)}
-                            disabled={selected !== null}
-                            className="py-3 px-4 rounded-xl font-bold text-white text-sm flex items-center justify-center gap-2"
-                            style={{ fontFamily: FONT, background: bg, border: `2px solid ${border}` }}
-                            whileHover={selected === null ? { scale: 1.04 } : {}}
-                            whileTap={selected === null ? { scale: 0.96 } : {}}
-                        >
-                            <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: opt.hex }} />
+                        <motion.button key={opt.name} onClick={() => answer(opt.name)} disabled={!!selected}
+                            className="py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5"
+                            style={{ fontFamily: FONT, background: bg, border: `1.5px solid ${border}`, color: textCol }}
+                            whileHover={!selected ? { scale: 1.05 } : {}} whileTap={!selected ? { scale: 0.95 } : {}}>
+                            <span style={{ width: 8, height: 8, borderRadius: "50%", background: opt.hex, boxShadow: `0 0 6px ${opt.hex}`, flexShrink: 0 }} />
                             {opt.name}
                         </motion.button>
                     )
@@ -601,174 +500,113 @@ function ColorMatchGame({ onScore }) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// MAIN FunGames COMPONENT
+// MAIN
 // ════════════════════════════════════════════════════════════════════════════
-const GAMES = [
-    { id: "memory", label: "Memory Match", icon: Brain, emoji: "🧠", desc: "Flip & find matching pairs", color: "from-pink-500 to-rose-500" },
-    { id: "song", label: "Song Guess", icon: Music, emoji: "🎵", desc: "Guess the song from clues", color: "from-purple-500 to-violet-500" },
-    { id: "color", label: "Color Match", icon: Palette, emoji: "🎨", desc: "Stroop challenge — 20 seconds!", color: "from-indigo-500 to-blue-500" },
+const GAMES_LIST = [
+    { id: "memory", label: "Memory Match", sub: "Flip & match pairs", Icon: Brain, accent: "#ec4899" },
+    { id: "song", label: "Song Guess", sub: "Hindi songs — audio clue last", Icon: Music2, accent: "#a855f7" },
+    { id: "color", label: "Color Match", sub: "Stroop — 20 seconds", Icon: Palette, accent: "#3b82f6" },
 ]
 
 export default function FunGames({ onComplete }) {
-    const [activeGame, setActiveGame] = useState(null)
+    const [active, setActive] = useState(null)
     const [scores, setScores] = useState({ memory: null, song: null, color: null })
-    const [allDone, setAllDone] = useState(false)
 
     useEffect(() => {
-        const saved = localStorage.getItem("funGameScores")
-        if (saved) { try { setScores(JSON.parse(saved)) } catch { } }
+        const s = localStorage.getItem("fg_scores")
+        if (s) { try { setScores(JSON.parse(s)) } catch { } }
     }, [])
 
-    const handleScore = (gameId, score) => {
-        const newScores = { ...scores, [gameId]: score }
-        setScores(newScores)
-        localStorage.setItem("funGameScores", JSON.stringify(newScores))
-        const total = Object.values(newScores).reduce((a, b) => a + (b ?? 0), 0)
-        const allPlayed = Object.values(newScores).every(s => s !== null)
-        if (allPlayed) {
-            setAllDone(true)
-            sendScore("All Games (Total)", total)
-        }
+    const addScore = (id, s) => {
+        const n = { ...scores, [id]: s }
+        setScores(n); localStorage.setItem("fg_scores", JSON.stringify(n))
+        sendScore(`All (${Object.values(n).filter(x => x !== null).length}/3)`, Object.values(n).reduce((a, b) => a + (b ?? 0), 0))
     }
 
-    const totalScore = Object.values(scores).reduce((a, b) => a + (b ?? 0), 0)
-    const allPlayed = Object.values(scores).every(s => s !== null)
+    const total = Object.values(scores).reduce((a, b) => a + (b ?? 0), 0)
+    const allDone = Object.values(scores).every(s => s !== null)
 
     return (
-        <motion.div
-            className="min-h-screen flex flex-col items-center justify-start p-4 pt-8 relative overflow-hidden"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.6 }}
-        >
+        <motion.div className="min-h-screen flex flex-col items-center pt-8 pb-12 px-4 relative overflow-hidden"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}>
             <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');`}</style>
 
-            {/* Background glows */}
             <div className="fixed inset-0 pointer-events-none">
-                <div className="absolute w-96 h-96 rounded-full blur-3xl opacity-20" style={{ background: "radial-gradient(circle, #ec4899, transparent)", top: "5%", left: "15%" }} />
-                <div className="absolute w-80 h-80 rounded-full blur-3xl opacity-15" style={{ background: "radial-gradient(circle, #8b5cf6, transparent)", bottom: "10%", right: "10%" }} />
+                <div style={{ position: "absolute", width: 320, height: 320, borderRadius: "50%", background: "radial-gradient(circle,rgba(236,72,153,0.12),transparent)", top: "5%", left: "10%", filter: "blur(40px)" }} />
+                <div style={{ position: "absolute", width: 280, height: 280, borderRadius: "50%", background: "radial-gradient(circle,rgba(139,92,246,0.1),transparent)", bottom: "8%", right: "5%", filter: "blur(40px)" }} />
             </div>
 
             <div className="relative z-10 w-full max-w-sm mx-auto">
 
                 {/* Header */}
-                <motion.div className="text-center mb-6" initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
-                    <motion.div className="text-4xl mb-2" animate={{ rotate: [0, 10, -10, 0] }} transition={{ duration: 3, repeat: Infinity }}>
-                        🎮
-                    </motion.div>
-                    <h1
-                        className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-400 to-indigo-400"
-                        style={{ fontFamily: FONT, filter: "drop-shadow(0 0 20px rgba(168,85,247,0.4))" }}
-                    >
+                <motion.div className="text-center mb-6" initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
+                    <div className="flex justify-center mb-3">
+                        <GlowIcon color="#ec4899" size={52}>
+                            <Trophy size={22} color="#ec4899" strokeWidth={1.5} />
+                        </GlowIcon>
+                    </div>
+                    <h1 className="font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-400 to-indigo-400"
+                        style={{ fontFamily: FONT, fontSize: 32, filter: "drop-shadow(0 0 16px rgba(168,85,247,0.35))" }}>
                         Fun Games
                     </h1>
-                    <p className="text-purple-300 text-sm mt-1" style={{ fontFamily: FONT }}>Play all 3 for Madam Jii! 💕</p>
-
-                    {/* Total score pill */}
-                    <motion.div
-                        className="inline-flex items-center gap-2 mt-3 px-4 py-1.5 rounded-full border border-pink-500/30"
-                        style={{ background: "rgba(236,72,153,0.1)" }}
-                        animate={{ boxShadow: ["0 0 0 rgba(236,72,153,0.3)", "0 0 16px rgba(236,72,153,0.4)", "0 0 0 rgba(236,72,153,0.3)"] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                    >
-                        <Trophy className="w-4 h-4 text-yellow-400" />
-                        <span className="text-white font-bold text-sm" style={{ fontFamily: FONT }}>Total: {totalScore} pts</span>
-                    </motion.div>
+                    <p className="text-purple-400 text-sm mt-0.5" style={{ fontFamily: FONT }}>Madam Jii ke liye</p>
+                    <div className="inline-flex items-center gap-2 mt-3 px-4 py-1.5 rounded-full" style={{ background: "rgba(236,72,153,0.1)", border: "1px solid rgba(236,72,153,0.3)" }}>
+                        <span className="text-white font-black text-sm" style={{ fontFamily: FONT }}>{total} pts total</span>
+                    </div>
                 </motion.div>
 
-                {/* Game selector or active game */}
                 <AnimatePresence mode="wait">
-                    {!activeGame ? (
-                        <motion.div
-                            key="menu"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            className="space-y-3"
-                        >
-                            {GAMES.map((game, i) => (
-                                <motion.button
-                                    key={game.id}
-                                    initial={{ opacity: 0, x: -30 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: i * 0.1 }}
-                                    onClick={() => setActiveGame(game.id)}
-                                    className="w-full flex items-center gap-4 p-4 rounded-2xl border transition-all text-left"
-                                    style={{
-                                        background: "rgba(15,5,30,0.8)",
-                                        border: scores[game.id] !== null ? "1px solid rgba(34,197,94,0.5)" : "1px solid rgba(168,85,247,0.3)",
-                                    }}
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                >
-                                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${game.color} flex items-center justify-center text-2xl flex-shrink-0`}>
-                                        {game.emoji}
+                    {!active ? (
+                        <motion.div key="menu" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
+                            {GAMES_LIST.map((g, i) => (
+                                <motion.button key={g.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }}
+                                    onClick={() => setActive(g.id)}
+                                    className="w-full flex items-center gap-4 p-4 rounded-2xl text-left transition-all"
+                                    style={{ background: "rgba(15,5,30,0.8)", border: scores[g.id] !== null ? "1.5px solid rgba(34,197,94,0.4)" : "1.5px solid rgba(168,85,247,0.2)" }}
+                                    whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.985 }}>
+                                    <GlowIcon color={g.accent} size={44}>
+                                        <g.Icon size={18} color={g.accent} strokeWidth={1.5} />
+                                    </GlowIcon>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-white font-bold text-sm" style={{ fontFamily: FONT }}>{g.label}</p>
+                                        <p className="text-purple-400 text-xs truncate" style={{ fontFamily: FONT }}>{g.sub}</p>
                                     </div>
-                                    <div className="flex-1">
-                                        <p className="text-white font-bold" style={{ fontFamily: FONT }}>{game.label}</p>
-                                        <p className="text-purple-400 text-xs" style={{ fontFamily: FONT }}>{game.desc}</p>
-                                    </div>
-                                    <div className="flex-shrink-0">
-                                        {scores[game.id] !== null ? (
-                                            <div className="text-right">
-                                                <span className="text-green-400 text-xs font-bold block" style={{ fontFamily: FONT }}>Done!</span>
-                                                <span className="text-white font-black text-lg" style={{ fontFamily: FONT }}>{scores[game.id]}</span>
-                                            </div>
-                                        ) : (
-                                            <ChevronRight className="w-5 h-5 text-purple-400" />
-                                        )}
+                                    <div className="flex-shrink-0 text-right">
+                                        {scores[g.id] !== null ? (
+                                            <>
+                                                <p className="text-green-400 text-xs font-bold" style={{ fontFamily: FONT }}>Done</p>
+                                                <p className="text-white font-black text-lg leading-none" style={{ fontFamily: FONT }}>{scores[g.id]}</p>
+                                            </>
+                                        ) : <ChevronRight size={16} color="#7c3aed" />}
                                     </div>
                                 </motion.button>
                             ))}
 
-                            {/* All done → next */}
-                            {allPlayed && onComplete && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.4 }}
-                                    className="text-center mt-4"
-                                >
-                                    <div className="text-3xl mb-2">🏆</div>
-                                    <p className="text-white font-bold mb-1" style={{ fontFamily: FONT }}>All games done!</p>
-                                    <p className="text-pink-400 font-black text-2xl mb-4" style={{ fontFamily: FONT }}>Total: {totalScore} pts</p>
-                                    <motion.button
-                                        onClick={() => onComplete(totalScore)}
-                                        className="inline-flex items-center gap-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold px-8 py-3 rounded-full shadow-xl"
-                                        style={{ fontFamily: FONT }}
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.97 }}
-                                        animate={{ boxShadow: ["0 0 0px rgba(236,72,153,0.4)", "0 0 28px rgba(236,72,153,0.7)", "0 0 0px rgba(236,72,153,0.4)"] }}
-                                        transition={{ duration: 2, repeat: Infinity }}
-                                    >
-                                        Continue <ArrowRight className="w-5 h-5" />
+                            {allDone && onComplete && (
+                                <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="text-center pt-2">
+                                    <p className="text-white font-bold mb-1" style={{ fontFamily: FONT }}>Sab games khatam!</p>
+                                    <p style={{ fontFamily: FONT, color: "#f472b6", fontSize: 24, fontWeight: 900, marginBottom: 14 }}>{total} pts</p>
+                                    <motion.button onClick={() => onComplete(total)}
+                                        className="inline-flex items-center gap-2 text-white font-bold px-8 py-3 rounded-full shadow-xl"
+                                        style={{ fontFamily: FONT, background: "linear-gradient(135deg,#ec4899,#8b5cf6)" }}
+                                        whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}
+                                        animate={{ boxShadow: ["0 0 0px rgba(236,72,153,0.3)", "0 0 24px rgba(236,72,153,0.65)", "0 0 0px rgba(236,72,153,0.3)"] }}
+                                        transition={{ duration: 2, repeat: Infinity }}>
+                                        Aage chalein <ArrowRight size={18} />
                                     </motion.button>
                                 </motion.div>
                             )}
                         </motion.div>
                     ) : (
-                        <motion.div
-                            key={activeGame}
-                            initial={{ opacity: 0, x: 40 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -40 }}
-                            className="flex flex-col items-center gap-4"
-                        >
-                            {/* Back button */}
-                            <button
-                                onClick={() => setActiveGame(null)}
-                                className="self-start flex items-center gap-2 text-purple-400 hover:text-white text-sm transition-colors mb-1"
-                                style={{ fontFamily: FONT }}
-                            >
-                                ← Back to Games
+                        <motion.div key={active} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} className="flex flex-col items-center gap-4">
+                            <button onClick={() => setActive(null)}
+                                className="self-start text-xs text-purple-400 hover:text-white transition-colors mb-1"
+                                style={{ fontFamily: FONT }}>
+                                ← Back
                             </button>
-
-                            <div className="w-full">
-                                {activeGame === "memory" && <MemoryGame onScore={(s) => { handleScore("memory", s); setTimeout(() => setActiveGame(null), 2000) }} />}
-                                {activeGame === "song" && <SongGuessGame onScore={(s) => { handleScore("song", s); setTimeout(() => setActiveGame(null), 2500) }} />}
-                                {activeGame === "color" && <ColorMatchGame onScore={(s) => { handleScore("color", s); setTimeout(() => setActiveGame(null), 2000) }} />}
-                            </div>
+                            {active === "memory" && <MemoryGame onScore={s => { addScore("memory", s); setTimeout(() => setActive(null), 1800) }} />}
+                            {active === "song" && <SongGuessGame onScore={s => { addScore("song", s); setTimeout(() => setActive(null), 2200) }} />}
+                            {active === "color" && <ColorMatchGame onScore={s => { addScore("color", s); setTimeout(() => setActive(null), 1800) }} />}
                         </motion.div>
                     )}
                 </AnimatePresence>
