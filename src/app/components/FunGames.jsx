@@ -199,9 +199,10 @@ function EmojiSongGame({ onScore }) {
 }
 
 // ============================================
-// MEMORY MATCH GAME - 3x3 Grid with Flip Effect
 // ============================================
-const CARD_SET_3x3 = [
+// MEMORY MATCH GAME - 3x4 Grid with Flip Effect (12 cards, 6 pairs)
+// ============================================
+const CARD_SET = [
     { id: "heart", icon: Heart, color: "#ec4899" },
     { id: "star", icon: Star, color: "#f59e0b" },
     { id: "moon", icon: Moon, color: "#818cf8" },
@@ -222,7 +223,8 @@ function MemoryGame({ onScore }) {
     const [score, setScore] = useState(0)
 
     const initGame = () => {
-        const selectedCards = [...CARD_SET_3x3.slice(0, 4), ...CARD_SET_3x3.slice(0, 4)]
+        // 6 pairs (12 cards) for 3x4 grid
+        const selectedCards = [...CARD_SET.slice(0, 6), ...CARD_SET.slice(0, 6)]
         const shuffled = selectedCards
             .sort(() => Math.random() - 0.5)
             .map((card, idx) => ({ ...card, uniqueId: idx, isFlipped: false, isMatched: false }))
@@ -264,7 +266,7 @@ function MemoryGame({ onScore }) {
                 setDisabled(false)
                 setMatched(prev => [...prev, cards[first].id])
 
-                if (matched.length + 1 === 4) {
+                if (matched.length + 1 === 6) {
                     const finalScore = Math.max(0, 100 - moves * 2)
                     setScore(finalScore)
                     setDone(true)
@@ -300,10 +302,10 @@ function MemoryGame({ onScore }) {
         <div className="flex flex-col items-center gap-3 w-full">
             <div className="flex justify-between w-full text-xs text-purple-400">
                 <span>🎴 MOVES: {moves}</span>
-                <span>✓ PAIRS: {matched.length}/4</span>
+                <span>✓ PAIRS: {matched.length}/6</span>
                 <button onClick={initGame} className="hover:text-pink-400"><RotateCcw size={14} /></button>
             </div>
-            <div className="grid grid-cols-3 gap-2 w-full max-w-[280px] mx-auto">
+            <div className="grid grid-cols-4 gap-2 w-full max-w-[380px] mx-auto">
                 {cards.map((card, idx) => {
                     const IconComponent = card.icon
                     const isFlippedOrMatched = card.isFlipped || card.isMatched
@@ -325,9 +327,9 @@ function MemoryGame({ onScore }) {
                                 style={{ transformStyle: "preserve-3d" }}
                             >
                                 {isFlippedOrMatched ? (
-                                    <IconComponent size={28} color={card.color} />
+                                    <IconComponent size={24} color={card.color} />
                                 ) : (
-                                    <div className="w-8 h-8 rounded-full border-2 border-white/20" />
+                                    <div className="w-6 h-6 rounded-full border-2 border-white/20" />
                                 )}
                             </motion.div>
                         </motion.button>
@@ -337,7 +339,6 @@ function MemoryGame({ onScore }) {
         </div>
     )
 }
-
 // ============================================
 // COLOR MATCH GAME
 // ============================================
