@@ -250,7 +250,7 @@ export default function FunGames({ onComplete }) {
                         <motion.div key="start" className="w-full text-center p-8 bg-white/5 border border-white/10 rounded-[32px] backdrop-blur-xl" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ opacity: 0 }}>
                             <PlaySquare className="w-16 h-16 text-pink-500 mx-auto mb-6" />
                             <h1 className="text-3xl font-black mb-4 uppercase tracking-tighter italic text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">Lyrics Challenge</h1>
-                            <p className="text-gray-400 text-sm mb-8 px-2">Watch the video. Your mic will record both the music and your voice. Complete the lyrics when the timer stops!</p>
+                            <p className="text-gray-400 text-sm mb-8 px-2">Watch the video....Nd Complete the lyrics when the lyrics... stops!</p>
                             <button onClick={startGame} className="w-full py-4 bg-pink-600 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-pink-500 shadow-lg shadow-pink-500/20 active:scale-95 transition-all">Start Challenge 🎙️</button>
                         </motion.div>
                     )}
