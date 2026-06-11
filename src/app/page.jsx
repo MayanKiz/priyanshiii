@@ -1,8 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { AnimatePresence } from "motion/react"
-import { motion } from "framer-motion"
+import { useState, useRef } from "react"
+import { AnimatePresence, motion } from "framer-motion"
 
 // Import all components
 import Loader from "./components/Loader"
@@ -16,85 +15,94 @@ import Wishes from "./components/Wishes"
 import MessageBoard from "./components/MessageBoard"
 
 export default function BirthdayApp() {
-  // Main flow states
   const [currentScreen, setCurrentScreen] = useState(0)
   const [showInitialLoader, setShowInitialLoader] = useState(true)
   const [showFunGames, setShowFunGames] = useState(false)
   const [finalGameScore, setFinalGameScore] = useState(0)
   
-  // Birthday logic
-  const birthdayDate = new Date("2026-06-11T00:00:00")
-  const [isBirthdayOver, setIsBirthdayOver] = useState(new Date().getTime() >= birthdayDate.getTime())
-  const [musicStarted, setMusicStarted] = useState(false)
+  // Audio Reference
+  const audioRef = useRef(null)
 
-  // Auto close Loader after 4 seconds (original behavior)
-  useEffect(() => {
-    if (showInitialLoader) {
-      const timer = setTimeout(() => {
-        setShowInitialLoader(false)
-        setShowFunGames(true)
-      }, 4000)
-      return () => clearTimeout(timer)
+  // 1. Loader pe "Continue" click karne pe (Music Starts Here)
+  const handleLoaderComplete = () => {
+    setShowInitialLoader(false)
+    setShowFunGames(true)
+
+    // Continue button ke click par hi gaana chalu hoga
+    if (audioRef.current) {
+      audioRef.current.volume = 0.7;
+      audioRef.current.play().catch(e => {
+        console.log("Audio play blocked or file missing:", e)
+      })
     }
-  }, [showInitialLoader])
-
-  // Handle FunGames completion
-  const handleGamesComplete = (score) => {
-    setFinalGameScore(score)
-    setShowFunGames(false)
-    // Move to celebration or countdown based on birthday
-    setCurrentScreen(0)
   }
 
-  // Screens sequence after games/loader
+  // 2. Games complete hone pe
+  const handleGamesComplete = (score) => {
+    setFinalGameScore(score)
+    setShowFunGames(false) 
+  }
+
+  // 3. Countdown page se Next karne pe (Song Change)
+  const handleCountdownComplete = () => {
+    if (audioRef.current) {
+      audioRef.current.pause() 
+      audioRef.current.src = "/images/FSHto5B4filPQ52j9K5Vu9ick1fs7HM.mp3" 
+      audioRef.current.load() 
+      audioRef.current.play().catch(e => console.log("Audio change error:", e)) 
+    }
+    setCurrentScreen(1) 
+  }
+
+  const birthdayDate = new Date("2026-06-11T00:00:00") 
+
   const screens = [
-    !isBirthdayOver
-      ? <Countdown key="countdown" onComplete={() => setIsBirthdayOver(true)} birthdayDate={birthdayDate} />
-      : <Celebration key="celebration" onNext={() => setCurrentScreen(1)} onMusicStart={() => setMusicStarted(true)} finalScore={finalGameScore} />,
-    <HappyBirthday key="happy" onNext={() => setCurrentScreen(2)} />,
-    <PhotoGallery key="gallery" onNext={() => setCurrentScreen(3)} />,
-    <Letter key="letter" onNext={() => setCurrentScreen(4)} />,
-    <Wishes key="wishes" onNext={() => setCurrentScreen(5)} />,
+    <Countdown key="countdown" onNext={handleCountdownComplete} birthdayDate={birthdayDate} />,
+    <Celebration key="celebration" onNext={() => setCurrentScreen(2)} finalScore={finalGameScore} />,
+    <HappyBirthday key="happy" onNext={() => setCurrentScreen(3)} />,
+    <PhotoGallery key="gallery" onNext={() => setCurrentScreen(4)} />,
+    <Letter key="letter" onNext={() => setCurrentScreen(5)} />,
+    <Wishes key="wishes" onNext={() => setCurrentScreen(6)} />,
     <MessageBoard key="messageboard" />,
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-950/30 via-black to-purple-950/30 overflow-hidden relative">
+    <div className="min-h-screen bg-aesthetic overflow-hidden relative">
+      
+      {/* HIDDEN AUDIO PLAYER */}
+      <audio 
+        ref={audioRef} 
+        src="/images/FSHto5B4filPQ52j9K5Vu9ick1fs7HM.mp3" 
+        loop 
+        preload="auto" 
+        className="hidden" 
+      />
 
-      {/* Background radial gradients */}
-      <div className="fixed inset-0 z-0 blur-[120px] opacity-20" style={{
-        backgroundImage: "radial-gradient(circle at 20% 25%, rgba(255, 99, 165, 0.6), transparent 40%)",
-      }} />
+      {/* Background Accents - Pink/Purple soft glows */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-pink-300/20 blur-[120px] rounded-full" />
+        <div className="absolute -bottom-[10%] -right-[10%] w-[50%] h-[50%] bg-purple-300/20 blur-[120px] rounded-full" />
+        <div className="absolute top-[40%] left-[60%] w-[30%] h-[30%] bg-rose-200/30 blur-[100px] rounded-full" />
+      </div>
 
-      <div className="fixed inset-0 z-0 blur-[120px] opacity-20" style={{
-        backgroundImage: "radial-gradient(circle at 80% 80%, rgba(99, 102, 241, 0.6), transparent 40%)",
-      }} />
-
-      <div className="fixed inset-0 z-0 blur-[160px] opacity-10" style={{
-        backgroundImage: "radial-gradient(circle at 50% 50%, rgba(228, 193, 255, 0.4), transparent 40%)",
-      }} />
-
-      <AnimatePresence mode="wait">
-        {/* Initial Loader (4 sec) */}
-        {showInitialLoader && <Loader key="initial-loader" onComplete={() => {}} />}
-        
-        {/* Fun Games (Memory + Song + Color Match) */}
-        {showFunGames && <FunGames key="fun-games" onComplete={handleGamesComplete} />}
-        
-        {/* Main Birthday Screens Sequence */}
-        {!showInitialLoader && !showFunGames && (
-          <AnimatePresence mode="wait">{screens[currentScreen]}</AnimatePresence>
-        )}
-      </AnimatePresence>
+      <div className="relative z-10 h-full">
+        <AnimatePresence mode="wait">
+          {showInitialLoader && <Loader key="initial-loader" onComplete={handleLoaderComplete} />}
+          {showFunGames && <FunGames key="fun-games" onComplete={handleGamesComplete} />}
+          {!showInitialLoader && !showFunGames && (
+            <AnimatePresence mode="wait">{screens[currentScreen]}</AnimatePresence>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Watermark */}
-      <motion.div
-        initial={{ x: 100, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ duration: 1, delay: 1 }}
-        className="fixed bottom-4 right-4 text-[13px] text-white/40 pointer-events-none z-50 font-light"
+      <motion.div 
+        initial={{ x: 100, opacity: 0 }} 
+        animate={{ x: 0, opacity: 1 }} 
+        transition={{ duration: 1, delay: 1 }} 
+        className="fixed bottom-4 right-4 text-sm text-[#77537e]/40 pointer-events-none z-50 font-light"
       >
-        @rao.mayankkk
+        Rao.mayankkk
       </motion.div>
     </div>
   )

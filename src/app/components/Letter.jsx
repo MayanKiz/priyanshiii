@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { motion, AnimatePresence } from "motion/react"
+import { motion, AnimatePresence } from "framer-motion"
 import { Mail, Heart, Sparkles, ArrowRight } from "lucide-react"
 import confetti from "canvas-confetti"
 
@@ -13,19 +13,30 @@ export default function Letter({ onNext }) {
     const [done, setDone] = useState(false)
     const scrollRef = useRef(null)
 
-    const letterText = `My Dearest Madam Jii,
+    const letterText = `Happy Birthday, Ms Priyanshi! 🎂✨
 
-Happy Birthday to the most amazing person!! 🎂✨ Honestly, on this super special day, a real life angel was born... and her name is Priyanshiii! 🩵
+Hope this day is everything you deserve and more.....
 
-I really want to thank your parents for bringing you into this world, because now you’re my friend and I feel so, so blessed. I’m incredibly lucky to have you in my life buddyyy..... Today isn't just about you getting a year older—it’s a celebration of all the joy, non-stop laughter, and beautiful memories you bring to everyone around youuu.... 
+Happy Birthday, Priyanshi 🎨🖌️
 
-You have this literal magic power to light up any room and make people smile even when things feel dark. I don’t know about anyone else, but for me, you are everything and I’m just telling you the truthhh. Your heart is pure gold and your energy is just so infectious! Also... can we talk about your voice?? It is literally supercafigtidiliciuoss! 🎶✨
+Aaj tumhara din hai, lekin aaj main ek aur insaan ko bhi thank you bolna chahta hu... tumhari mom ko.
 
-I hope you realize how rare you are and how much everyone around you appreciates you. Thank you for being the wonderful, amazing, and absolutely fantastic person you are. The world is so much brighter just because you’re in ittt!
+Unko thank you for giving birth to you. For bringing you into this world. Kyuki agar wo na hoti, toh main aaj tumse milta bhi nahi, baat karta bhi nahi..So Thankyou to Her...
 
-Happy Birthday to a truly beautiful soul! 🥳💕
-With all my love and the warmest wishes everrr,
-Forever Yoursss 💖✨`
+Toh aaj tumhe bhi wish hai, aur unhe bhi.. from the bottom of my heart.
+
+You're one of the best things that happened to me. And I mean that.
+
+Have the happiest birthday. Eat well. Smile more
+
+Wishing you a day full of smiles, warmth, and beautiful moments. Have the most wonderful birthday! 🎉💕
+Huh just 1 line more...
+root@kali:~# sudo apt-get install happy-birthday-priyanshi
+[+] Executing wish... Success! 🎉
+
+Have a fantastic Birthday...<3
+
+~Mayank`
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -44,18 +55,22 @@ Forever Yoursss 💖✨`
                     clearInterval(timer)
                     setShowCursor(false)
                     setDone(true)
+                    
+                    const colors = ["#f472b6", "#a855f7", "#fcd34d"]
+                    
                     confetti({
                         particleCount: 80,
                         spread: 90,
                         origin: { y: 0.5 },
-                        colors: ["#ff69b4", "#ff1493", "#9370db", "#8a2be2", "#ffd700"],
+                        colors: colors,
+                        zIndex: 100
                     })
                     setTimeout(() => {
-                        confetti({ particleCount: 40, spread: 60, origin: { x: 0.1, y: 0.6 }, colors: ["#ff69b4", "#ffd700"] })
-                        confetti({ particleCount: 40, spread: 60, origin: { x: 0.9, y: 0.6 }, colors: ["#9370db", "#ff1493"] })
+                        confetti({ particleCount: 50, spread: 60, origin: { x: 0.1, y: 0.6 }, colors: colors, zIndex: 100 })
+                        confetti({ particleCount: 50, spread: 60, origin: { x: 0.9, y: 0.6 }, colors: colors, zIndex: 100 })
                     }, 400)
                 }
-            }, 28)
+            }, 30)
             return () => clearInterval(timer)
         }
     }, [showText])
@@ -65,187 +80,81 @@ Forever Yoursss 💖✨`
         setTimeout(() => setShowText(true), 800)
     }
 
+    // Premium styles
+    const premiumCard = "neu-card"
+    const inputBox = "neu-card-pressed p-6 md:p-8"
+    const btnPrimary = "neu-button text-[#973b88] px-8 py-4 font-bold flex items-center justify-center gap-3 w-full max-w-[300px] uppercase tracking-[0.12em] text-[13px]"
+
     return (
         <motion.div
-            className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden"
+            className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden bg-aesthetic font-sans"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8 }}
         >
-            {/* Nunito font */}
-            <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');`}</style>
-
-            {/* Floating particles */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                {["💌", "✨", "🌸", "💕", "✨️", "🌺"].map((emoji, i) => (
-                    <motion.div
-                        key={i}
-                        className="absolute text-lg select-none"
-                        style={{ left: `${(i * 17 + 5) % 100}%`, top: `${(i * 23 + 10) % 80}%` }}
-                        animate={{ y: [0, -20, 0], opacity: [0.2, 0.6, 0.2], rotate: [0, 10, -10, 0] }}
-                        transition={{ duration: 4 + i, repeat: Infinity, delay: i * 0.5 }}
-                    >
-                        {emoji}
-                    </motion.div>
-                ))}
+            {/* Background Accents */}
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+                <div className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-pink-300/20 blur-[120px] rounded-full" />
+                <div className="absolute -bottom-[10%] -right-[10%] w-[50%] h-[50%] bg-purple-300/20 blur-[120px] rounded-full" />
             </div>
 
-            <div className="max-w-4xl w-full relative z-10">
-                <motion.div
-                    className="text-center mb-8"
-                    initial={{ y: -50, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                >
-                    <h1
-                        className="text-4xl md:text-6xl py-1 md:py-2 font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-400 to-indigo-400 mb-4"
-                        style={{ fontFamily: "'Nunito', sans-serif", filter: "drop-shadow(0 0 20px rgba(168,85,247,0.4))" }}
-                    >
-                        A Special Letter
-                    </h1>
-                    <motion.p
-                        className="text-lg text-purple-300"
-                        style={{ fontFamily: "'Nunito', sans-serif" }}
-                        animate={{ opacity: [0.6, 1, 0.6] }}
-                        transition={{ duration: 3, repeat: Infinity }}
-                    >
-                        Just for you, on your special day 💌
-                    </motion.p>
+            <div className="max-w-3xl w-full relative z-10 flex flex-col items-center">
+                <motion.div className="text-center mb-10" initial={{ y: -30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }}>
+                    <h1 className="text-3xl md:text-5xl font-bold text-[#973b88] mb-3 tracking-wide drop-shadow-md"
+                        style={{ filter: "drop-shadow(0 0 20px rgba(151,59,136,0.4))" }}>A Special Letter</h1>
+                    <motion.p className="text-[#77537e] text-[13px] font-medium tracking-[0.15em] uppercase" animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 3, repeat: Infinity }}>Just for you, on your special day ✨</motion.p>
                 </motion.div>
 
-                <motion.div
-                    className="relative w-full h-full flex justify-center"
-                    initial={{ scale: 0, rotate: -10 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
-                >
+                <motion.div className="relative w-full flex justify-center" initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} transition={{ delay: 0.5, type: "spring", stiffness: 200 }}>
                     <AnimatePresence mode="wait">
                         {!isOpen ? (
                             <motion.div
                                 key="envelope"
-                                className="relative cursor-pointer"
-                                whileHover={{ scale: 1.05, rotate: 2 }}
+                                className={`w-[280px] h-[200px] md:w-[320px] md:h-[220px] ${premiumCard} cursor-pointer flex flex-col items-center justify-center relative`}
+                                whileHover={{ scale: 1.05, y: -5 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={handleOpenLetter}
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ rotateX: -90, opacity: 0 }}
-                                transition={{ duration: 0.5 }}
+                                exit={{ rotateY: 90, opacity: 0 }}
+                                transition={{ duration: 0.4 }}
                             >
-                                <motion.div
-                                    className="absolute inset-0 rounded-2xl blur-xl"
-                                    style={{ background: "linear-gradient(135deg, #f9a8d4, #c084fc)" }}
-                                    animate={{ opacity: [0.3, 0.7, 0.3] }}
-                                    transition={{ duration: 2, repeat: Infinity }}
-                                />
-                                <div className="w-80 h-52 bg-gradient-to-br from-pink-200 to-purple-200 rounded-2xl shadow-2xl border-2 border-pink-300 relative overflow-hidden">
-                                    <div className="absolute top-0 left-0 w-full h-26 bg-gradient-to-br from-pink-300 to-purple-300 transform origin-top" />
-                                    <div className="absolute bottom-0 left-0 w-full h-40 bg-gradient-to-br from-pink-100 to-purple-100" />
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                        <motion.div
-                                            animate={{ scale: [1, 1.08, 1] }}
-                                            transition={{ duration: 2, repeat: Infinity }}
-                                        >
-                                            <Mail className="w-16 h-16 text-pink-500" />
-                                        </motion.div>
-                                    </div>
-                                    <div className="absolute top-4 right-4">
-                                        <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 1.5, repeat: Infinity }}>
-                                            <Heart className="w-6 h-6 text-red-500 fill-current" />
-                                        </motion.div>
-                                    </div>
-                                    <div className="absolute bottom-4 left-4">
-                                        <Sparkles className="w-6 h-6 text-yellow-500" />
-                                    </div>
-                                    <motion.div
-                                        className="absolute bottom-3 left-1/2 transform -translate-x-1/2 text-pink-700 text-base font-semibold whitespace-nowrap"
-                                        style={{ fontFamily: "'Nunito', sans-serif" }}
-                                        animate={{ opacity: [0.5, 1, 0.5] }}
-                                        transition={{ duration: 1.5, repeat: Infinity }}
-                                    >
-                                        Click to open
-                                    </motion.div>
+                                <div className="neu-image-frame w-20 h-20 flex items-center justify-center mx-auto">
+                                    <Mail className="w-8 h-8 text-[#973b88]" />
                                 </div>
+                                <div className="mt-4 flex items-center gap-2 text-[#973b88] font-bold text-[12px] uppercase tracking-widest">Tap to open <Heart className="w-3 h-3 text-[#973b88] fill-[#973b88]/50" /></div>
                             </motion.div>
                         ) : (
                             <motion.div
                                 key="letter"
-                                className="w-full max-w-2xl rounded-2xl shadow-2xl border-2 border-pink-300 p-8 relative flex flex-col"
-                                initial={{ rotateX: -90, opacity: 0 }}
-                                animate={{ rotateX: 0, opacity: 1 }}
-                                exit={{ opacity: 0, scale: 0.2 }}
-                                transition={{ duration: 0.8, type: "spring" }}
-                                style={{
-                                    background: "linear-gradient(135deg, #fce7f3 0%, #fae8ff 25%, #e0e7ff 50%, #fdf2f8 75%, #fce7f3 100%)",
-                                }}
+                                className={`w-full ${premiumCard} p-6 md:p-10 relative flex flex-col`}
+                                initial={{ rotateY: -90, opacity: 0 }}
+                                animate={{ rotateY: 0, opacity: 1 }}
+                                transition={{ duration: 0.6, type: "spring", stiffness: 150 }}
                             >
                                 <div className="text-center mb-6">
-                                    <motion.div
-                                        className="inline-block"
-                                        animate={{ rotate: [0, 5, -5, 0] }}
-                                        transition={{ duration: 3, repeat: Infinity }}
-                                    >
-                                        <Heart className="w-12 h-12 text-red-500 fill-current mx-auto mb-3" />
+                                    <motion.div animate={{ rotate: [0, 5, -5, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}>
+                                        <Heart className="w-10 h-10 text-[#973b88] mx-auto fill-[#973b88]/20" />
                                     </motion.div>
                                 </div>
 
-                                <div
-                                    ref={scrollRef}
-                                    className="min-h-72 max-h-72 overflow-y-auto text-gray-700 leading-relaxed relative z-10"
-                                    style={{ scrollBehavior: "smooth" }}
-                                >
+                                <div ref={scrollRef} className={`min-h-[50vh] max-h-[50vh] md:min-h-[350px] md:max-h-[350px] overflow-y-auto ${inputBox} scrollbar-hide`}>
                                     {showText && (
-                                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-3 mr-2">
-                                            <div
-                                                className="whitespace-pre-wrap pb-4"
-                                                style={{ fontFamily: "'Nunito', sans-serif", fontSize: "15px", lineHeight: "1.9" }}
-                                            >
-                                                {currentText}
-                                                {showCursor && (
-                                                    <motion.span
-                                                        className="inline-block w-0.5 h-4 bg-purple-600 ml-1 align-middle"
-                                                        animate={{ opacity: [0, 1, 0] }}
-                                                        transition={{ duration: 0.8, repeat: Infinity }}
-                                                    />
-                                                )}
-                                            </div>
-                                        </motion.div>
+                                        <div className="whitespace-pre-wrap text-[#77537e] text-[15px] md:text-[16px] font-medium leading-[1.9] tracking-wide">
+                                            {currentText}
+                                            {showCursor && <motion.span className="inline-block w-[3px] h-[18px] bg-[#973b88] ml-1 align-middle rounded-full" animate={{ opacity: [0, 1, 0] }} transition={{ duration: 0.8, repeat: Infinity }} />}
+                                        </div>
                                     )}
                                 </div>
 
-                                {/* YAHAN HAI TERA SOFT BUTTON JO KHATAM HONE KE BAAD AAYEGA */}
                                 {done && onNext && (
-                                    <motion.div
-                                        className="flex items-center justify-center mt-4 relative z-20"
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ duration: 0.5, ease: "easeOut" }}
-                                    >
-                                        <motion.button
-                                            onClick={onNext}
-                                            whileHover={{ scale: 1.05 }}
-                                            whileTap={{ scale: 0.95 }}
-                                            className="group flex items-center gap-3 bg-white/60 backdrop-blur-md px-8 py-3 rounded-full border border-pink-200 shadow-[0_8px_30px_rgb(236,72,153,0.15)] transition-all duration-300"
-                                        >
-                                            <span className="text-pink-600 font-bold text-lg" style={{ fontFamily: "'Nunito', sans-serif" }}>
-                                                See what's next...
-                                            </span>
-                                            <div className="bg-gradient-to-r from-pink-400 to-purple-400 p-2 rounded-full group-hover:translate-x-1 transition-transform">
-                                                <ArrowRight className="w-5 h-5 text-white" />
-                                            </div>
-                                        </motion.button>
+                                    <motion.div className="mt-8 relative z-20 w-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, type: "spring" }}>
+                                        <button onClick={onNext} className={btnPrimary}>See what&apos;s next <ArrowRight size={18} strokeWidth={3} /></button>
                                     </motion.div>
                                 )}
-
-                                <div className="absolute top-4 left-4 pointer-events-none"><Sparkles className="w-6 h-6 text-yellow-500" /></div>
-                                <div className="absolute top-4 right-4 pointer-events-none"><Heart className="w-6 h-6 text-rose-500 fill-current" /></div>
-                                <div className="absolute bottom-4 left-4 pointer-events-none"><Heart className="w-6 h-6 text-pink-500 fill-current" /></div>
-                                <div className="absolute bottom-4 right-4 pointer-events-none"><Sparkles className="w-6 h-6 text-purple-500" /></div>
                             </motion.div>
                         )}
                     </AnimatePresence>
                 </motion.div>
             </div>
         </motion.div>
-    )
+    );
 }

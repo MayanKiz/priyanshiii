@@ -1,0 +1,29 @@
+{
+  "systemSetup": [],
+  "templateName": "custom",
+  "projectDependencies": [
+    { "name": "Install Dependencies", "command": "npm install" }
+  ],
+  "codeChecks": [
+    { "name": "Run Linter", "command": "npm run lint" }
+  ],
+  "buildSteps": [
+    { "name": "Build Project", "command": "npm run build" }
+  ],
+  "runStep": [
+    { "name": "Start Dev Server", "command": "npm run dev -- --port 3000 --hostname 0.0.0.0", "port": "3000" }
+  ],
+  "deploySteps": [
+    { "name": "Build for Production", "command": "npm run build" },
+    { "name": "Start Production Server", "command": "npm run start -- --port 3000" }
+  ],
+  "cleanupFiles": [
+    ".next",
+    "node_modules/.cache",
+    "node_modules/.vite",
+    "out",
+    "dist"
+  ],
+  "packageManager": "npm",
+  "envPaths": [{"name": "default", "path": ".env"}]
+}

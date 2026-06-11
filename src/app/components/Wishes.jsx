@@ -1,219 +1,179 @@
 "use client"
 
 import { useState } from "react"
-import { motion, AnimatePresence } from "motion/react"
-import { ArrowRight, ArrowLeft, Star, Sparkles, Heart } from "lucide-react"
-import confetti from "canvas-confetti"
+import { motion, AnimatePresence } from "framer-motion"
+import { ArrowRight, Sparkles, MousePointerClick, Hand } from "lucide-react"
 
-const wishes = [
-    {
-        emoji: "🌸",
-        title: "You Are Loved",
-        text: "More than words can say, more than stars in the sky — you are surrounded by love today and always. Never forget how much you mean to the people lucky enough to have you.",
-        color: "from-pink-500 to-rose-500",
-        bg: "from-pink-950/60 to-rose-950/60",
-        border: "border-pink-500/40",
-    },
-    {
-        emoji: "✨",
-        title: "You Are Magic",
-        text: "The way you smile, the way you care, the way you show up — it's all pure magic. The world is genuinely better because you exist in it, Madam Jii.",
-        color: "from-purple-500 to-violet-500",
-        bg: "from-purple-950/60 to-violet-950/60",
-        border: "border-purple-500/40",
-    },
-    {
-        emoji: "🌟",
-        title: "Your Year Ahead",
-        text: "May this year bring you everything your heart has been quietly wishing for. New adventures, deep joy, unexpected blessings, and every dream arriving right on time.",
-        color: "from-amber-500 to-yellow-500",
-        bg: "from-amber-950/60 to-yellow-950/60",
-        border: "border-amber-500/40",
-    },
-    {
-        emoji: "💫",
-        title: "Keep Shining",
-        text: "You have this rare gift of making everyone around you feel seen and special. Keep being exactly who you are — the world needs more of your light.",
-        color: "from-cyan-500 to-blue-500",
-        bg: "from-cyan-950/60 to-blue-950/60",
-        border: "border-cyan-500/40",
-    },
-    {
-        emoji: "🎀",
-        title: "Happy Birthday!",
-        text: "Here's to cake, laughter, and celebrating YOU! You deserve every single good thing coming your way. Happy Birthday, beautiful soul — this one's all for you! 🎂🥳",
-        color: "from-pink-500 via-purple-500 to-indigo-500",
-        bg: "from-pink-950/60 via-purple-950/60 to-indigo-950/60",
-        border: "border-purple-400/40",
-    },
+// Vocabulary updated from "Wishes" to "Thoughts/Truths"
+const thoughts = [
+  {
+    emoji: "🌸",
+    title: "A Special Day",
+    text: "Today is all about celebrating the person you are and the journey you've had so far. Wishing you a day filled with happiness, smiles, and good memories."
+  },
+  {
+    emoji: "✨",
+    title: "Stay Amazing",
+    text: "Your confidence, determination, and unique personality make you stand out in your own way. Keep moving forward and achieving great things."
+  },
+  {
+    emoji: "🌟",
+    title: "New Beginnings",
+    text: "May this new chapter bring exciting opportunities, meaningful experiences, and countless moments worth remembering."
+  },
+  {
+    emoji: "💫",
+    title: "Keep Growing",
+    text: "Every year adds new lessons, new memories, and new achievements. Keep believing in yourself and enjoying the journey ahead."
+  },
+  {
+    emoji: "🎂",
+    title: "Happy Birthday!",
+    text: "Wishing you a wonderful birthday filled with joy, laughter, and everything that makes you smile. Have an amazing year ahead, Chhota Don! 🎉"
+  }
 ]
-
-export default function Wishes({ onNext, onBack }) {
+export default function LittleTruths({ onNext, onBack }) {
     const [current, setCurrent] = useState(0)
     const [direction, setDirection] = useState(1)
+    const [isFlipped, setIsFlipped] = useState(false)
+    const [isDragging, setIsDragging] = useState(false) // Swipe ke time flip rokne ke liye
 
-    const goNext = () => {
-        if (current < wishes.length - 1) {
+    // Swipe logic
+    const handleDragEnd = (event, info) => {
+        setTimeout(() => setIsDragging(false), 150) // Drag ke baad thoda delay
+        const threshold = 50 // Swipe sensitivity
+        
+        if (info.offset.x < -threshold && current < thoughts.length - 1) {
+            // Swiped left (Next card)
+            setIsFlipped(false)
             setDirection(1)
             setCurrent(c => c + 1)
-            if (current === wishes.length - 2) {
-                confetti({ particleCount: 60, spread: 80, origin: { y: 0.5 }, colors: ["#f9a8d4", "#c084fc", "#fbbf24"] })
-            }
-        }
-    }
-
-    const goPrev = () => {
-        if (current > 0) {
+        } else if (info.offset.x > threshold && current > 0) {
+            // Swiped right (Prev card)
+            setIsFlipped(false)
             setDirection(-1)
             setCurrent(c => c - 1)
         }
     }
 
-    const w = wishes[current]
+    const t = thoughts[current]
+
+    // Premium styles with enhanced visible edges
+    const cardBg = "neu-card"
+    const btnPrimary = "neu-button text-[#973b88] font-bold flex items-center justify-center gap-2 px-6 py-4 uppercase tracking-[0.12em] text-[13px] w-full"
 
     return (
         <motion.div
-            className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden"
+            className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden bg-aesthetic"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.6 }}
         >
-            {/* YAHAN FONT IMPORT ADD KIYA HAI */}
-            <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');`}</style>
-
-            {/* Background orbs */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                <motion.div
-                    className="absolute w-96 h-96 rounded-full blur-3xl"
-                    style={{ background: "radial-gradient(circle, rgba(236,72,153,0.15), transparent)", top: "10%", left: "20%" }}
-                    animate={{ scale: [1, 1.3, 1], opacity: [0.4, 0.8, 0.4] }}
-                    transition={{ duration: 6, repeat: Infinity }}
-                />
-                <motion.div
-                    className="absolute w-80 h-80 rounded-full blur-3xl"
-                    style={{ background: "radial-gradient(circle, rgba(139,92,246,0.15), transparent)", bottom: "15%", right: "15%" }}
-                    animate={{ scale: [1.2, 1, 1.2], opacity: [0.3, 0.7, 0.3] }}
-                    transition={{ duration: 7, repeat: Infinity, delay: 1 }}
-                />
+            {/* Elegant Background Accents */}
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+                <div className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-pink-300/20 blur-[120px] rounded-full" />
+                <div className="absolute -bottom-[10%] -right-[10%] w-[50%] h-[50%] bg-purple-300/20 blur-[120px] rounded-full" />
             </div>
 
-            {/* Header */}
-            <motion.div
-                className="text-center mb-8 relative z-10"
-                initial={{ y: -30, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.2 }}
-            >
-                <motion.div
-                    className="text-5xl mb-3 select-none"
-                    animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
-                    transition={{ duration: 3, repeat: Infinity }}
-                >
-                    🎁
-                </motion.div>
-                <h1
-                    className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-400 to-indigo-400 mb-2"
-                    style={{ fontFamily: "'Nunito', sans-serif", filter: "drop-shadow(0 0 20px rgba(168,85,247,0.4))" }}
-                >
-                    Birthday Wishes
+            {/* Header & Blinking Instructions */}
+            <motion.div className="text-center mb-10 relative z-10" initial={{ y: -30, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
+                <h1 className="text-3xl md:text-4xl font-bold text-[#973b88] mb-4 tracking-widest uppercase drop-shadow-sm">
+                    Little Truths
                 </h1>
-                <p className="text-purple-300 text-base" style={{ fontFamily: "'Nunito', sans-serif" }}>
-                    Just for you, Madam Jii 💜
-                </p>
+                
+                {/* Blinking Animation for Instructions */}
+                <motion.div 
+                    className="flex flex-col items-center justify-center gap-1 text-[#77537e] text-[11px] font-bold tracking-[0.15em] uppercase"
+                    animate={{ opacity: [0.3, 1, 0.3] }}
+                    transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                >
+                    <p className="flex items-center gap-1"><Hand size={12} className="-rotate-45" /> Swipe Left/Right to change</p>
+                    <p className="flex items-center gap-1"><MousePointerClick size={12} /> Tap card to reveal</p>
+                </motion.div>
             </motion.div>
 
-            {/* Card */}
-            <div className="relative z-10 w-full max-w-sm mx-auto">
+            {/* 3D Flip Card with Drag (Swipe) */}
+            <div className="relative z-10 w-full max-w-sm mx-auto [perspective:1000px]">
                 <AnimatePresence mode="wait" custom={direction}>
                     <motion.div
                         key={current}
                         custom={direction}
-                        initial={{ x: direction * 300, opacity: 0, scale: 0.9 }}
-                        animate={{ x: 0, opacity: 1, scale: 1 }}
-                        exit={{ x: direction * -300, opacity: 0, scale: 0.9 }}
-                        transition={{ type: "spring", stiffness: 260, damping: 22 }}
-                        className={`rounded-3xl border-2 ${w.border} p-7 shadow-2xl relative overflow-hidden`}
-                        style={{ background: "rgba(15,5,30,0.85)", backdropFilter: "blur(16px)" }}
+                        initial={{ x: direction * 150, opacity: 0, rotateY: -10 * direction }}
+                        animate={{ x: 0, opacity: 1, rotateY: 0 }}
+                        exit={{ x: direction * -150, opacity: 0, rotateY: 10 * direction }}
+                        transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                        className="w-full h-[400px] cursor-grab active:cursor-grabbing"
+                        
+                        // Framer Motion Drag setup
+                        drag="x"
+                        dragConstraints={{ left: 0, right: 0 }}
+                        dragElastic={0.6}
+                        onDragStart={() => setIsDragging(true)}
+                        onDragEnd={handleDragEnd}
+                        
+                        // Tap (Flip) Logic
+                        onClick={() => {
+                            if (!isDragging) setIsFlipped(!isFlipped)
+                        }}
                     >
-                        {/* Gradient accent top */}
-                        <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${w.color} rounded-t-3xl`} />
-
-                        {/* Emoji */}
                         <motion.div
-                            className="text-6xl text-center mb-4 select-none"
-                            animate={{ scale: [1, 1.12, 1], rotate: [0, 5, -5, 0] }}
-                            transition={{ duration: 3, repeat: Infinity }}
+                            className="w-full h-full relative [transform-style:preserve-3d]"
+                            animate={{ rotateY: isFlipped ? 180 : 0 }}
+                            transition={{ duration: 0.6, type: "spring", stiffness: 260, damping: 20 }}
                         >
-                            {w.emoji}
+                            {/* FRONT OF CARD (Hidden State) - ADDED BORDERS FOR EDGES */}
+                            <div className={`absolute w-full h-full rounded-3xl ${cardBg} border-[3px] border-white/60 p-8 flex flex-col items-center justify-center [backface-visibility:hidden]`}>
+                                <div className="neu-image-frame w-20 h-20 flex items-center justify-center mb-6">
+                                    <Sparkles className="w-8 h-8 text-[#973b88]" />
+                                </div>
+                                <h3 className="text-xl font-bold text-[#973b88] uppercase tracking-widest mb-2">Truth {current + 1}</h3>
+                                <p className="text-[#77537e] text-[12px] font-bold flex items-center gap-2">
+                                    <MousePointerClick size={14} /> Tap to open
+                                </p>
+                            </div>
+
+                            {/* BACK OF CARD (Revealed State) - ADDED BORDERS FOR EDGES */}
+                            <div className={`absolute w-full h-full rounded-3xl bg-white shadow-[inset_4px_4px_10px_rgba(151,59,136,0.1),0_10px_30px_rgba(151,59,136,0.15)] border-[3px] border-pink-100 p-8 flex flex-col items-center justify-center text-center [backface-visibility:hidden]`} style={{ transform: 'rotateY(180deg)' }}>
+                                <motion.div className="text-5xl mb-6" animate={{ scale: [1, 1.05, 1] }} transition={{ duration: 2, repeat: Infinity }}>
+                                    {t.emoji}
+                                </motion.div>
+                                <h2 className="text-xl font-black text-[#973b88] mb-4 uppercase tracking-widest">
+                                    {t.title}
+                                </h2>
+                                <p className="text-[#77537e] leading-relaxed text-[13px] font-bold">
+                                    {t.text}
+                                </p>
+                            </div>
                         </motion.div>
-
-                        {/* Title */}
-                        <h2
-                            className={`text-2xl font-bold text-center mb-4 text-transparent bg-clip-text bg-gradient-to-r ${w.color}`}
-                            style={{ fontFamily: "'Nunito', sans-serif" }}
-                        >
-                            {w.title}
-                        </h2>
-
-                        {/* Text */}
-                        <p
-                            className="text-gray-300 text-center leading-relaxed text-base"
-                            style={{ fontFamily: "'Nunito', sans-serif", lineHeight: "1.85" }}
-                        >
-                            {w.text}
-                        </p>
-
-                        {/* Decorative corners */}
-                        <div className="absolute top-4 right-4 opacity-40"><Sparkles className="w-4 h-4 text-purple-300" /></div>
-                        <div className="absolute bottom-4 left-4 opacity-40"><Heart className="w-4 h-4 text-pink-400 fill-current" /></div>
                     </motion.div>
                 </AnimatePresence>
 
                 {/* Dot indicators */}
-                <div className="flex justify-center gap-2 mt-5">
-                    {wishes.map((_, i) => (
-                        <motion.button
+                <div className="flex justify-center gap-3 mt-10">
+                    {thoughts.map((_, i) => (
+                        <div
                             key={i}
-                            onClick={() => { setDirection(i > current ? 1 : -1); setCurrent(i) }}
-                            className="rounded-full transition-all"
-                            animate={{
-                                width: i === current ? 24 : 8,
-                                background: i === current ? "#ec4899" : "rgba(255,255,255,0.2)",
-                            }}
-                            style={{ height: 8 }}
+                            className={`transition-all duration-300 rounded-full h-2 ${i === current ? 'w-8 bg-[#973b88] shadow-[0_0_10px_rgba(151,59,136,0.5)]' : 'w-2 bg-[#eecfeb]'}`}
                         />
                     ))}
                 </div>
 
-                {/* Nav buttons */}
-                <div className="flex justify-between items-center mt-5 gap-3">
-                    <button
-                        onClick={goPrev}
-                        disabled={current === 0}
-                        className="flex items-center gap-2 px-4 py-2 rounded-full border border-pink-500/40 text-pink-300 text-sm font-medium disabled:opacity-30 transition-all hover:bg-pink-500/10"
-                        style={{ fontFamily: "'Nunito', sans-serif" }}
-                    >
-                        <ArrowLeft className="w-4 h-4" /> Prev
-                    </button>
-
-                    {current < wishes.length - 1 ? (
-                        <button
-                            onClick={goNext}
-                            className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white text-sm font-semibold shadow-lg hover:scale-105 transition-all"
-                            style={{ fontFamily: "'Nunito', sans-serif" }}
-                        >
-                            Next <ArrowRight className="w-4 h-4" />
-                        </button>
-                    ) : (
-                        <button
-                            onClick={onNext}
-                            className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white text-sm font-semibold shadow-lg hover:scale-105 transition-all"
-                            style={{ fontFamily: "'Nunito', sans-serif" }}
-                        >
-                            Leave a Message <ArrowRight className="w-4 h-4" />
-                        </button>
-                    )}
+                {/* Final Continue Button (Shows only on the last card) */}
+                <div className="mt-8 h-16 relative">
+                    <AnimatePresence>
+                        {current === thoughts.length - 1 && (
+                            <motion.button
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 20 }}
+                                onClick={onNext}
+                                className={btnPrimary}
+                            >
+                                Next Surprise <ArrowRight size={18} strokeWidth={3} />
+                            </motion.button>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
         </motion.div>
