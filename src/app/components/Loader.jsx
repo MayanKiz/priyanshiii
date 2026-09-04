@@ -77,7 +77,7 @@ export default function Loader({ onComplete }) {
 
         <motion.h1 initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} 
             className="text-4xl md:text-5xl text-[#973b88] leading-tight tracking-tight drop-shadow-md font-bold">
-            ek chhota sa
+            a little
         </motion.h1>
         <motion.h1 initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} 
             className="text-4xl md:text-5xl text-[#973b88] leading-tight tracking-tight drop-shadow-md font-bold">
@@ -91,7 +91,7 @@ export default function Loader({ onComplete }) {
           </span>
         </motion.div>
         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.65 }} className="mt-3 max-w-xs text-sm font-semibold text-[#986486]">
-          thoda sa pyaar, thodi si masti, aur bahut saari memories ✨
+          A soft little world of memories, made just for you ✨
         </motion.p>
 
         <motion.div initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: "40px" }} transition={{ delay: 0.6 }} 
@@ -106,7 +106,7 @@ export default function Loader({ onComplete }) {
         transition={{ duration: 1, delay: 0.5, type: "spring" }}
       >
         <motion.div 
-            className="neu-image-frame w-[280px] h-[360px] md:w-[340px] md:h-[420px] overflow-hidden"
+            className="neu-image-frame relative aspect-[4/5] w-[min(82vw,340px)] max-h-[420px] overflow-hidden p-2 sm:p-3"
             animate={{ 
                 borderRadius: [
                     "60% 40% 55% 45% / 50% 55% 45% 50%", 
@@ -117,13 +117,23 @@ export default function Loader({ onComplete }) {
             }}
             transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
         >
-          <img
-            src="/images/10.jpg"
-            alt="Special person"
-            className="w-full h-full object-cover object-center"
-          />
-          {/* Subtle inner shadow overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-pink-100/30 to-transparent pointer-events-none" />
+          <motion.div
+            className="relative h-full w-full overflow-hidden rounded-[inherit] bg-white/45"
+            animate={{ boxShadow: ["0 10px 20px rgba(151,59,136,0.10)", "0 20px 38px rgba(151,59,136,0.18)", "0 10px 20px rgba(151,59,136,0.10)"] }}
+            transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <img
+              src="/images/10.jpg"
+              alt="A special memory"
+              className="h-full w-full object-contain p-2 sm:p-3"
+            />
+            <motion.div
+              className="pointer-events-none absolute inset-y-0 -left-1/2 w-1/3 skew-x-[-18deg] bg-gradient-to-r from-transparent via-white/55 to-transparent"
+              animate={{ left: ["-45%", "125%"] }}
+              transition={{ duration: 4.8, repeat: Infinity, repeatDelay: 2.2, ease: "easeInOut" }}
+            />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-pink-100/25 via-transparent to-white/20" />
+          </motion.div>
         </motion.div>
       </motion.div>
 

@@ -29,18 +29,18 @@ const thoughts = [
   {
     emoji: "🎂",
     title: "Happy Birthday!",
-    text: "Wishing you a wonderful birthday filled with joy, laughter, and everything that makes you smile. Have an amazing year ahead, Chhota Don! 🎉"
+    text: "Wishing you a wonderful birthday filled with joy, laughter, and everything that makes you smile. Have an amazing year ahead! 🎉"
   }
 ]
 export default function LittleTruths({ onNext, onBack }) {
     const [current, setCurrent] = useState(0)
     const [direction, setDirection] = useState(1)
     const [isFlipped, setIsFlipped] = useState(false)
-    const [isDragging, setIsDragging] = useState(false) // Swipe ke time flip rokne ke liye
+    const [isDragging, setIsDragging] = useState(false) // Prevent the card from flipping during a drag
 
     // Swipe logic
     const handleDragEnd = (event, info) => {
-        setTimeout(() => setIsDragging(false), 150) // Drag ke baad thoda delay
+        setTimeout(() => setIsDragging(false), 150) // Let the drag state settle before the next card
         const threshold = 50 // Swipe sensitivity
         
         if (info.offset.x < -threshold && current < thoughts.length - 1) {
@@ -58,7 +58,7 @@ export default function LittleTruths({ onNext, onBack }) {
 
     const t = thoughts[current]
 
-    // Premium styles with enhanced visible edges
+    // Soft pastel card styles
     const cardBg = "neu-card"
     const btnPrimary = "neu-button text-[#973b88] font-bold flex items-center justify-center gap-2 px-6 py-4 uppercase tracking-[0.12em] text-[13px] w-full"
 

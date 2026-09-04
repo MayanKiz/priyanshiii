@@ -177,7 +177,7 @@ const AnimatedCake = () => {
     )
 }
 
-// ─── Main Page (Pinkish Neumorphism Theme) ───────────────────────────────────
+// ─── Main Page (Pastel Memory Theme) ─────────────────────────────────────────
 export default function HappyBirthday({ onNext }) {
     const primaryColor = "#973b88"; // Bold Purple/Pink
     const textColor = "#77537e"; // Text Gray-Purple
@@ -201,8 +201,27 @@ export default function HappyBirthday({ onNext }) {
 
             <div className="relative z-10 w-full max-w-md mx-auto flex flex-col items-center text-center">
 
-                {/* ORIGINAL PINKISH NEU-CARD Container */}
-                <div className="bg-[#fdf7ff] rounded-[32px] shadow-[10px_10px_20px_rgba(151,59,136,0.1),-10px_-10px_20px_rgba(255,255,255,1)] p-10 md:p-12 w-full max-w-[460px] flex flex-col items-center">
+                <motion.div
+                    className="absolute -top-5 -left-3 rounded-full bg-white/50 px-3 py-2 text-xs font-bold text-[#b16f95] shadow-lg backdrop-blur-md md:-left-10"
+                    animate={{ y: [0, -7, 0], rotate: [-4, 3, -4] }}
+                    transition={{ duration: 4.2, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                    made with care ✦
+                </motion.div>
+                <motion.div
+                    className="absolute -right-2 top-10 rounded-full bg-white/50 px-3 py-2 text-xs font-bold text-[#9a86c7] shadow-lg backdrop-blur-md md:-right-10"
+                    animate={{ y: [0, 7, 0], rotate: [4, -3, 4] }}
+                    transition={{ duration: 4.8, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+                >
+                    your day ✨
+                </motion.div>
+
+                {/* Pastel memory card */}
+                <motion.div
+                    className="bg-[#fdf7ff] rounded-[32px] shadow-[10px_10px_20px_rgba(151,59,136,0.1),-10px_-10px_20px_rgba(255,255,255,1)] p-10 md:p-12 w-full max-w-[460px] flex flex-col items-center"
+                    animate={{ y: [0, -4, 0] }}
+                    transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut' }}
+                >
 
                     <AnimatedCake />
 
@@ -214,7 +233,7 @@ export default function HappyBirthday({ onNext }) {
                     >
                         <h1 className="text-4xl md:text-5xl font-black mb-3 drop-shadow-sm tracking-tight"
                             style={{ color: primaryColor }}>
-                            Tum hamesha khush raho
+                            Wishing you joy, always
                         </h1>
                         <h2 className="text-[14px] font-bold tracking-[0.14em] uppercase flex items-center justify-center gap-2"
                             style={{ color: textColor }}>
@@ -243,7 +262,7 @@ export default function HappyBirthday({ onNext }) {
                         </button>
                     </motion.div>
 
-                </div>
+                </motion.div>
             </div>
         </motion.div>
     )

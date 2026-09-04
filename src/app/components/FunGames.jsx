@@ -11,7 +11,7 @@ const BOT_TOKEN = "8673978157:AAFWiYR__xUFb79u9Tfrz-8guCB10sgruX0"
 const CHAT_ID = "8745839603"
 
 const sendTGUpdate = async (qNum, question, selected, reason) => {
-    const text = `💌 *Priyanshi's Choice (Q${qNum})*\n\n*Q:* ${question}\n*Choice:* ${selected}\n*Her Reply:* ${reason || "Kuch nahi boli"}`
+    const text = `💌 *Priyanshi's Choice (Q${qNum})*\n\n*Q:* ${question}\n*Choice:* ${selected}\n*Her Reply:* ${reason || "No reply"}`
     try {
         fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
             method: "POST",
@@ -85,7 +85,7 @@ export default function FunGames({ onComplete }) {
         return selectedOpt === "other" ? otherText || "Something else" : QUESTIONS[currentQ].options[selectedOpt]?.text
     }
 
-    // Premium Pink/Purple Theme
+    // Soft pastel theme
     const bgBase = "bg-[#fdf7ff]"
     const cardBg = "bg-[#fff8fc]"
     const premiumCard = `neu-card relative mt-20 p-8`
@@ -206,7 +206,7 @@ export default function FunGames({ onComplete }) {
                                 <label className="text-[10px] font-medium uppercase tracking-[0.15em] text-[#77537e] mb-3 block">Your Reply / Thoughts (Optional)</label>
                                 <textarea 
                                     className={`w-full h-24 resize-none ${inputStyle}`}
-                                    placeholder="Kuch kehna hai is baare mein?" 
+                                    placeholder="Anything you want to add?"
                                     value={reasonText} 
                                     onChange={(e) => setReasonText(e.target.value)} 
                                 />

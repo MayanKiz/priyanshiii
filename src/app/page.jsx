@@ -23,12 +23,12 @@ export default function BirthdayApp() {
   // Audio Reference
   const audioRef = useRef(null)
 
-  // 1. Loader pe "Continue" click karne pe (Music Starts Here)
+  // 1. Start the experience and begin the music after a user gesture
   const handleLoaderComplete = () => {
     setShowInitialLoader(false)
     setShowFunGames(true)
 
-    // Continue button ke click par hi gaana chalu hoga
+    // Audio starts only after the user presses Continue
     if (audioRef.current) {
       audioRef.current.volume = 0.7;
       audioRef.current.play().catch(e => {
@@ -37,13 +37,13 @@ export default function BirthdayApp() {
     }
   }
 
-  // 2. Games complete hone pe
+  // 2. Move on after the interactive intro
   const handleGamesComplete = (score) => {
     setFinalGameScore(score)
     setShowFunGames(false) 
   }
 
-  // 3. Countdown page se Next karne pe (Song Change)
+  // 3. Move on from the countdown and switch tracks
   const handleCountdownComplete = () => {
     if (audioRef.current) {
       audioRef.current.pause() 
@@ -54,14 +54,7 @@ export default function BirthdayApp() {
     setCurrentScreen(1) 
   }
 
-  const getNextBirthday = () => {
-    const now = new Date()
-    const candidate = new Date(now.getFullYear(), 5, 11, 0, 0, 0)
-    if (candidate <= now) candidate.setFullYear(candidate.getFullYear() + 1)
-    return candidate
-  }
-
-  const birthdayDate = getNextBirthday()
+  const birthdayDate = new Date("2025-06-11T00:00:00")
 
   const screens = [
     <Countdown key="countdown" onNext={handleCountdownComplete} birthdayDate={birthdayDate} />,

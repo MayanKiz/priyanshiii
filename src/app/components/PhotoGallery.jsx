@@ -92,7 +92,7 @@ export default function PhotoGallery({ onNext }) {
                     <span className="eyebrow-pill"><Camera size={13} /> memories, in motion</span>
                     <h1 className="font-heading mt-5 text-4xl font-bold tracking-tight text-[#7d416f] sm:text-5xl">a little gallery</h1>
                     <p className="font-cute mx-auto mt-3 max-w-md text-sm font-semibold leading-relaxed text-[#986486] sm:text-base">
-                        har photo mein ek chhoti si story hai — swipe karo, pause karo, aur favourite frame save kar lo.
+                        Every photo holds a small story — swipe, pause and keep your favourite frame.
                     </p>
                 </motion.header>
 
@@ -191,7 +191,7 @@ export default function PhotoGallery({ onNext }) {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.25 }}
                 >
-                    <p className="font-cute text-center text-sm font-semibold text-[#a06d8d]">some memories deserve a second look ✨</p>
+                    <p className="font-cute text-center text-sm font-semibold text-[#a06d8d]">Some memories deserve a second look ✨</p>
                     <button type="button" onClick={onNext} className="primary-pill w-full sm:w-auto">
                         one last thing <ArrowRight size={17} strokeWidth={2.5} />
                     </button>

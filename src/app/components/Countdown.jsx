@@ -222,7 +222,7 @@ export default function Countdown({ onNext, birthdayDate }) {
                             </div>
                             <h2 className="text-[18px] font-bold text-[#973b88] mb-2 uppercase tracking-widest mt-4">Hehehe!</h2>
                             <p className="text-[#77537e] mb-8 text-[14px] font-medium leading-relaxed">
-                                &quot;Badi jaldi machi hai? Aise kaise aage jane du? Wait karo birthday ki date aane ka chup chaap!&quot;
+                                &quot;Already trying to skip? Not so fast — let the countdown do its thing.&quot;
                             </p>
                             <button onClick={() => setGameState("message")} className={btnPrimary}>
                                 Next <ArrowRight size={16} strokeWidth={3} />
@@ -233,10 +233,10 @@ export default function Countdown({ onNext, birthdayDate }) {
                     {/* STATE 3: MESSAGE BOX */}
                     {gameState === "message" && (
                         <motion.div key="msg" initial={{ x: 50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className={`p-6 text-center ${premiumCard}`}>
-                            <h3 className="text-[14px] font-bold text-[#973b88] uppercase mb-6 tracking-widest">Kuch likhna chahoge?</h3>
+                            <h3 className="text-[14px] font-bold text-[#973b88] uppercase mb-6 tracking-widest">Want to leave a note?</h3>
                             <textarea 
                                 className="w-full h-32 p-4 bg-[#fff] shadow-inner rounded-2xl text-[#77537e] outline-none mb-6 resize-none font-medium text-sm placeholder-[#77537e]/50 border border-pink-100" 
-                                placeholder="Gaaliyan bhi allowed hain..." 
+                                placeholder="Anything you want to say..."
                                 value={userMessage} 
                                 onChange={(e)=>setUserMessage(e.target.value)} 
                             />

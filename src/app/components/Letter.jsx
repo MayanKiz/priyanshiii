@@ -5,13 +5,13 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Mail, Heart, Sparkles, ArrowRight, ChevronDown } from "lucide-react"
 import confetti from "canvas-confetti"
 
-const fullNote = `Tum mere liye sirf ek dost nahi ho.
+const fullNote = `You are more than just a friend to me.
 
-Tum woh insaan ho jise main hamesha safe, khush aur muskurata dekhna chahta hoon. Tumhari life mein thoda sa sukoon, thodi si warmth aur bahut saari khushiyan rahein — bas yahi wish hai.
+I hope life always gives you reasons to feel safe, loved and genuinely happy. You never have to prove your worth — you are already enough, exactly as you are.
 
-Bina kisi shor, bina kisi credit ke, main hamesha tumhari care karunga. Tumhe kuch prove karne ki zaroorat nahi hai — tum jaise ho, waise hi kaafi ho.
+No grand promises, no spotlight. Just quiet care, good memories and a wish to see you smile.
 
-Tumhari smile sach mein favourite cheezon mein se ek hai. Happy Birthday, Priyanshi. 💕`
+Happy Birthday, Priyanshi. 💕`
 
 export default function Letter({ onNext }) {
     const [isOpen, setIsOpen] = useState(false)
@@ -22,7 +22,7 @@ export default function Letter({ onNext }) {
     const [showFullNote, setShowFullNote] = useState(false)
     const scrollRef = useRef(null)
 
-    const letterText = `Tum mere liye sirf ek dost nahi ho — tum woh sukoon ho jise main hamesha safe, khush aur muskurata dekhna chahta hoon.\n\nBina kisi shor, bina kisi credit ke — bas tumhari khushi ke liye. 💕`
+    const letterText = `You are more than just a friend — you are someone I always want to see safe, happy and smiling.\n\nNo big promises, no spotlight — just a little quiet care, always. 💕`
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -81,10 +81,10 @@ export default function Letter({ onNext }) {
                 >
                     <span className="eyebrow-pill"><Sparkles size={13} /> a little note for you</span>
                     <h1 className="font-heading mt-5 text-4xl font-bold tracking-tight text-[#7d416f] md:text-6xl">
-                        idk whyy...
+                        I do not know why...
                     </h1>
                     <p className="font-cute mt-3 text-lg font-semibold text-[#986486] md:text-xl">
-                        i want ki tum hmesha khush rhoo.
+                        I hope you always have a reason to smile.
                     </p>
                 </motion.header>
 
@@ -147,7 +147,7 @@ export default function Letter({ onNext }) {
                                             className="inline-flex items-center justify-center gap-2 rounded-full px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-[#a25f86] transition hover:bg-white/70 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#d28bb7]/40"
                                             aria-expanded={showFullNote}
                                         >
-                                            {showFullNote ? "hide the longer note" : "aur thoda sa?"}
+                                            {showFullNote ? "hide the longer note" : "read a little more"}
                                             <ChevronDown size={15} className={`transition-transform ${showFullNote ? "rotate-180" : ""}`} />
                                         </button>
                                         <AnimatePresence initial={false}>

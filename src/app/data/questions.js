@@ -2,10 +2,10 @@ export const QUESTIONS = [
   {
     q: "How are youuu?",
     options: [
-      { text: "mastt", reply: "Good to hear! 😊" },
-      { text: "good goodd", reply: "That's nice! ✨" },
-      { text: "Pata nahi, bas jinda huu", reply: "Haha, take care! 😄" },
-      { text: "sad🥺", reply: "Hope you feel better soon. 🫂" }
+      { text: "Great", reply: "Good to hear! 😊" },
+      { text: "Pretty good", reply: "That's nice! ✨" },
+      { text: "Just getting through the day", reply: "Take gentle care of yourself. 😄" },
+      { text: "A little low 🥺", reply: "I hope you feel better soon. 🫂" }
     ],
     gif: "/images/10.gif"
   }
