@@ -212,14 +212,14 @@ export default function HappyBirthday({ onNext }) {
                         transition={{ delay: 0.6, type: 'spring', stiffness: 120 }}
                         className="text-center mt-10 mb-8"
                     >
-                        <h1 className="text-4xl md:text-5xl font-black mb-3 drop-shadow-sm tracking-wider uppercase"
+                        <h1 className="text-4xl md:text-5xl font-black mb-3 drop-shadow-sm tracking-tight"
                             style={{ color: primaryColor }}>
-                            Happy Birthday
+                            Tum hamesha khush raho
                         </h1>
-                        <h2 className="text-[14px] font-bold tracking-[0.2em] uppercase flex items-center justify-center gap-2"
+                        <h2 className="text-[14px] font-bold tracking-[0.14em] uppercase flex items-center justify-center gap-2"
                             style={{ color: textColor }}>
                             <Sparkles style={{ width: 16, height: 16, color: '#f472b6' }} />
-                            Madam Jii
+                            a little birthday wish
                             <Sparkles style={{ width: 16, height: 16, color: '#f472b6' }} />
                         </h2>
                     </motion.div>
@@ -239,7 +239,7 @@ export default function HappyBirthday({ onNext }) {
                                        active:shadow-[inset_4px_4px_8px_rgba(151,59,136,0.1),inset_-4px_-4px_8px_rgba(255,255,255,1)]"
                             style={{ color: primaryColor }}
                         >
-                            See Our Moments <ArrowRight size={18} strokeWidth={3} className="ml-1" />
+                            See Our Memories <ArrowRight size={18} strokeWidth={3} className="ml-1" />
                         </button>
                     </motion.div>
 

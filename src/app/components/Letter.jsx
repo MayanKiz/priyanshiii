@@ -2,8 +2,16 @@
 
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Mail, Heart, Sparkles, ArrowRight } from "lucide-react"
+import { Mail, Heart, Sparkles, ArrowRight, ChevronDown } from "lucide-react"
 import confetti from "canvas-confetti"
+
+const fullNote = `Tum mere liye sirf ek dost nahi ho.
+
+Tum woh insaan ho jise main hamesha safe, khush aur muskurata dekhna chahta hoon. Tumhari life mein thoda sa sukoon, thodi si warmth aur bahut saari khushiyan rahein — bas yahi wish hai.
+
+Bina kisi shor, bina kisi credit ke, main hamesha tumhari care karunga. Tumhe kuch prove karne ki zaroorat nahi hai — tum jaise ho, waise hi kaafi ho.
+
+Tumhari smile sach mein favourite cheezon mein se ek hai. Happy Birthday, Priyanshi. 💕`
 
 export default function Letter({ onNext }) {
     const [isOpen, setIsOpen] = useState(false)
@@ -11,32 +19,10 @@ export default function Letter({ onNext }) {
     const [currentText, setCurrentText] = useState("")
     const [showCursor, setShowCursor] = useState(true)
     const [done, setDone] = useState(false)
+    const [showFullNote, setShowFullNote] = useState(false)
     const scrollRef = useRef(null)
 
-    const letterText = `Happy Birthday, Ms Priyanshi! 🎂✨
-
-Hope this day is everything you deserve and more.....
-
-Happy Birthday, Priyanshi 🎨🖌️
-
-Aaj tumhara din hai, lekin aaj main ek aur insaan ko bhi thank you bolna chahta hu... tumhari mom ko.
-
-Unko thank you for giving birth to you. For bringing you into this world. Kyuki agar wo na hoti, toh main aaj tumse milta bhi nahi, baat karta bhi nahi..So Thankyou to Her...
-
-Toh aaj tumhe bhi wish hai, aur unhe bhi.. from the bottom of my heart.
-
-You're one of the best things that happened to me. And I mean that.
-
-Have the happiest birthday. Eat well. Smile more
-
-Wishing you a day full of smiles, warmth, and beautiful moments. Have the most wonderful birthday! 🎉💕
-Huh just 1 line more...
-root@kali:~# sudo apt-get install happy-birthday-priyanshi
-[+] Executing wish... Success! 🎉
-
-Have a fantastic Birthday...<3
-
-~Mayank`
+    const letterText = `Tum mere liye sirf ek dost nahi ho — tum woh sukoon ho jise main hamesha safe, khush aur muskurata dekhna chahta hoon.\n\nBina kisi shor, bina kisi credit ke — bas tumhari khushi ke liye. 💕`
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -45,116 +31,147 @@ Have a fantastic Birthday...<3
     }, [currentText])
 
     useEffect(() => {
-        if (showText) {
-            let index = 0
-            const timer = setInterval(() => {
-                if (index < letterText.length) {
-                    setCurrentText(letterText.slice(0, index + 1))
-                    index++
-                } else {
-                    clearInterval(timer)
-                    setShowCursor(false)
-                    setDone(true)
-                    
-                    const colors = ["#f472b6", "#a855f7", "#fcd34d"]
-                    
-                    confetti({
-                        particleCount: 80,
-                        spread: 90,
-                        origin: { y: 0.5 },
-                        colors: colors,
-                        zIndex: 100
-                    })
-                    setTimeout(() => {
-                        confetti({ particleCount: 50, spread: 60, origin: { x: 0.1, y: 0.6 }, colors: colors, zIndex: 100 })
-                        confetti({ particleCount: 50, spread: 60, origin: { x: 0.9, y: 0.6 }, colors: colors, zIndex: 100 })
-                    }, 400)
-                }
-            }, 30)
-            return () => clearInterval(timer)
-        }
-    }, [showText])
+        if (!showText) return
+
+        let index = 0
+        const timer = setInterval(() => {
+            if (index < letterText.length) {
+                setCurrentText(letterText.slice(0, index + 1))
+                index++
+            } else {
+                clearInterval(timer)
+                setShowCursor(false)
+                setDone(true)
+                confetti({
+                    particleCount: 70,
+                    spread: 90,
+                    origin: { y: 0.5 },
+                    colors: ["#f09ac6", "#a78bfa", "#fcd34d"],
+                    zIndex: 100,
+                })
+            }
+        }, 26)
+
+        return () => clearInterval(timer)
+    }, [showText, letterText.length])
 
     const handleOpenLetter = () => {
         setIsOpen(true)
-        setTimeout(() => setShowText(true), 800)
+        setTimeout(() => setShowText(true), 650)
     }
 
-    // Premium styles
-    const premiumCard = "neu-card"
-    const inputBox = "neu-card-pressed p-6 md:p-8"
-    const btnPrimary = "neu-button text-[#973b88] px-8 py-4 font-bold flex items-center justify-center gap-3 w-full max-w-[300px] uppercase tracking-[0.12em] text-[13px]"
-
     return (
-        <motion.div
-            className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden bg-aesthetic font-sans"
+        <motion.main
+            className="memory-shell min-h-screen flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.6 }}
         >
-            {/* Background Accents */}
-            <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-                <div className="absolute -top-[10%] -left-[10%] w-[50%] h-[50%] bg-pink-300/20 blur-[120px] rounded-full" />
-                <div className="absolute -bottom-[10%] -right-[10%] w-[50%] h-[50%] bg-purple-300/20 blur-[120px] rounded-full" />
-            </div>
+            <div className="dream-orb dream-orb-pink" aria-hidden="true" />
+            <div className="dream-orb dream-orb-lilac" aria-hidden="true" />
+            <div className="dream-sparkle sparkle-one" aria-hidden="true">✦</div>
+            <div className="dream-sparkle sparkle-two" aria-hidden="true">✧</div>
 
-            <div className="max-w-3xl w-full relative z-10 flex flex-col items-center">
-                <motion.div className="text-center mb-10" initial={{ y: -30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }}>
-                    <h1 className="text-3xl md:text-5xl font-bold text-[#973b88] mb-3 tracking-wide drop-shadow-md"
-                        style={{ filter: "drop-shadow(0 0 20px rgba(151,59,136,0.4))" }}>A Special Letter</h1>
-                    <motion.p className="text-[#77537e] text-[13px] font-medium tracking-[0.15em] uppercase" animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 3, repeat: Infinity }}>Just for you, on your special day ✨</motion.p>
-                </motion.div>
+            <div className="relative z-10 flex w-full max-w-3xl flex-col items-center">
+                <motion.header
+                    className="mb-9 text-center"
+                    initial={{ y: -18, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.15 }}
+                >
+                    <span className="eyebrow-pill"><Sparkles size={13} /> a little note for you</span>
+                    <h1 className="font-heading mt-5 text-4xl font-bold tracking-tight text-[#7d416f] md:text-6xl">
+                        idk whyy...
+                    </h1>
+                    <p className="font-cute mt-3 text-lg font-semibold text-[#986486] md:text-xl">
+                        i want ki tum hmesha khush rhoo.
+                    </p>
+                </motion.header>
 
-                <motion.div className="relative w-full flex justify-center" initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} transition={{ delay: 0.5, type: "spring", stiffness: 200 }}>
+                <motion.div
+                    className="relative flex w-full justify-center"
+                    initial={{ scale: 0.94, y: 18 }}
+                    animate={{ scale: 1, y: 0 }}
+                    transition={{ delay: 0.28, type: "spring", stiffness: 180 }}
+                >
                     <AnimatePresence mode="wait">
                         {!isOpen ? (
-                            <motion.div
+                            <motion.button
+                                type="button"
                                 key="envelope"
-                                className={`w-[280px] h-[200px] md:w-[320px] md:h-[220px] ${premiumCard} cursor-pointer flex flex-col items-center justify-center relative`}
-                                whileHover={{ scale: 1.05, y: -5 }}
-                                whileTap={{ scale: 0.95 }}
+                                className="glass-card group flex h-[230px] w-[min(100%,360px)] flex-col items-center justify-center rounded-[2rem] px-8 text-center outline-none focus-visible:ring-4 focus-visible:ring-[#d28bb7]/40"
+                                whileHover={{ y: -6, rotate: -1 }}
+                                whileTap={{ scale: 0.97 }}
                                 onClick={handleOpenLetter}
                                 exit={{ rotateY: 90, opacity: 0 }}
-                                transition={{ duration: 0.4 }}
                             >
-                                <div className="neu-image-frame w-20 h-20 flex items-center justify-center mx-auto">
-                                    <Mail className="w-8 h-8 text-[#973b88]" />
-                                </div>
-                                <div className="mt-4 flex items-center gap-2 text-[#973b88] font-bold text-[12px] uppercase tracking-widest">Tap to open <Heart className="w-3 h-3 text-[#973b88] fill-[#973b88]/50" /></div>
-                            </motion.div>
+                                <span className="icon-bubble mb-5"><Mail size={30} /></span>
+                                <span className="font-heading text-xl font-bold text-[#7d416f]">open this when ready</span>
+                                <span className="mt-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-[#b16f95]">
+                                    tap to open <Heart size={13} fill="currentColor" />
+                                </span>
+                            </motion.button>
                         ) : (
-                            <motion.div
+                            <motion.section
                                 key="letter"
-                                className={`w-full ${premiumCard} p-6 md:p-10 relative flex flex-col`}
-                                initial={{ rotateY: -90, opacity: 0 }}
+                                className="glass-card w-full rounded-[2rem] p-5 sm:p-8 md:p-10"
+                                initial={{ rotateY: -80, opacity: 0 }}
                                 animate={{ rotateY: 0, opacity: 1 }}
-                                transition={{ duration: 0.6, type: "spring", stiffness: 150 }}
+                                transition={{ duration: 0.55, type: "spring", stiffness: 150 }}
                             >
-                                <div className="text-center mb-6">
-                                    <motion.div animate={{ rotate: [0, 5, -5, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}>
-                                        <Heart className="w-10 h-10 text-[#973b88] mx-auto fill-[#973b88]/20" />
-                                    </motion.div>
+                                <div className="mb-6 flex items-center justify-between gap-4">
+                                    <div className="flex items-center gap-3">
+                                        <span className="icon-bubble icon-bubble-small"><Heart size={18} fill="currentColor" /></span>
+                                        <div>
+                                            <p className="font-heading text-sm font-bold text-[#7d416f]">for your soft heart</p>
+                                            <p className="font-cute text-xs text-[#ad7698]">no big words, just a little care</p>
+                                        </div>
+                                    </div>
+                                    <Sparkles className="text-[#d28bb7]" size={20} />
                                 </div>
 
-                                <div ref={scrollRef} className={`min-h-[50vh] max-h-[50vh] md:min-h-[350px] md:max-h-[350px] overflow-y-auto ${inputBox} scrollbar-hide`}>
+                                <div ref={scrollRef} className="note-paper min-h-[190px] overflow-y-auto rounded-[1.35rem] p-5 sm:p-7">
                                     {showText && (
-                                        <div className="whitespace-pre-wrap text-[#77537e] text-[15px] md:text-[16px] font-medium leading-[1.9] tracking-wide">
+                                        <p className="font-cute whitespace-pre-wrap text-[16px] font-semibold leading-[1.9] tracking-wide text-[#805a74] sm:text-[18px]">
                                             {currentText}
-                                            {showCursor && <motion.span className="inline-block w-[3px] h-[18px] bg-[#973b88] ml-1 align-middle rounded-full" animate={{ opacity: [0, 1, 0] }} transition={{ duration: 0.8, repeat: Infinity }} />}
-                                        </div>
+                                            {showCursor && <motion.span className="ml-1 inline-block h-[18px] w-[3px] rounded-full bg-[#c477a2] align-middle" animate={{ opacity: [0, 1, 0] }} transition={{ duration: 0.8, repeat: Infinity }} />}
+                                        </p>
                                     )}
                                 </div>
 
-                                {done && onNext && (
-                                    <motion.div className="mt-8 relative z-20 w-full" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, type: "spring" }}>
-                                        <button onClick={onNext} className={btnPrimary}>See what&apos;s next <ArrowRight size={18} strokeWidth={3} /></button>
-                                    </motion.div>
+                                {done && (
+                                    <div className="mt-5 flex flex-col gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowFullNote((value) => !value)}
+                                            className="inline-flex items-center justify-center gap-2 rounded-full px-4 py-3 text-xs font-bold uppercase tracking-[0.16em] text-[#a25f86] transition hover:bg-white/70 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#d28bb7]/40"
+                                            aria-expanded={showFullNote}
+                                        >
+                                            {showFullNote ? "hide the longer note" : "aur thoda sa?"}
+                                            <ChevronDown size={15} className={`transition-transform ${showFullNote ? "rotate-180" : ""}`} />
+                                        </button>
+                                        <AnimatePresence initial={false}>
+                                            {showFullNote && (
+                                                <motion.p
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: "auto", opacity: 1 }}
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    className="overflow-hidden whitespace-pre-wrap rounded-[1.1rem] bg-white/55 p-5 font-cute text-sm leading-[1.8] text-[#89657d]"
+                                                >
+                                                    {fullNote}
+                                                </motion.p>
+                                            )}
+                                        </AnimatePresence>
+                                        <button type="button" onClick={onNext} className="primary-pill mt-1">
+                                            see what&apos;s next <ArrowRight size={17} strokeWidth={2.5} />
+                                        </button>
+                                    </div>
                                 )}
-                            </motion.div>
+                            </motion.section>
                         )}
                     </AnimatePresence>
                 </motion.div>
             </div>
-        </motion.div>
-    );
+        </motion.main>
+    )
 }

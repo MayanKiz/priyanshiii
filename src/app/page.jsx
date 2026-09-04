@@ -54,7 +54,14 @@ export default function BirthdayApp() {
     setCurrentScreen(1) 
   }
 
-  const birthdayDate = new Date("2026-06-11T00:00:00") 
+  const getNextBirthday = () => {
+    const now = new Date()
+    const candidate = new Date(now.getFullYear(), 5, 11, 0, 0, 0)
+    if (candidate <= now) candidate.setFullYear(candidate.getFullYear() + 1)
+    return candidate
+  }
+
+  const birthdayDate = getNextBirthday()
 
   const screens = [
     <Countdown key="countdown" onNext={handleCountdownComplete} birthdayDate={birthdayDate} />,

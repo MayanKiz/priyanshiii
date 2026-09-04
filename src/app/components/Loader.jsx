@@ -77,19 +77,22 @@ export default function Loader({ onComplete }) {
 
         <motion.h1 initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} 
             className="text-4xl md:text-5xl text-[#973b88] leading-tight tracking-tight drop-shadow-md font-bold">
-            Preparing
+            ek chhota sa
         </motion.h1>
         <motion.h1 initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} 
             className="text-4xl md:text-5xl text-[#973b88] leading-tight tracking-tight drop-shadow-md font-bold">
-            Something
+            surprise
         </motion.h1>
         
         {/* Cursive Special Text */}
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="mt-1">
           <span className="text-5xl md:text-6xl text-[#973b88] tracking-wide drop-shadow-lg font-bold italic">
-            Special
+            just for you
           </span>
         </motion.div>
+        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.65 }} className="mt-3 max-w-xs text-sm font-semibold text-[#986486]">
+          thoda sa pyaar, thodi si masti, aur bahut saari memories ✨
+        </motion.p>
 
         <motion.div initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: "40px" }} transition={{ delay: 0.6 }} 
             className="h-[2px] bg-[#973b88]/20 rounded-full mt-6 mb-4" />
