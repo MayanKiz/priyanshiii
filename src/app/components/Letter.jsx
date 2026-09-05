@@ -11,7 +11,26 @@ I hope life always gives you reasons to feel safe, loved and genuinely happy. Yo
 
 No grand promises, no spotlight. Just quiet care, good memories and a wish to see you smile.
 
-Happy Birthday, Priyanshi. 💕`
+Happy Birthday, Ms. Priyanshi! 🎂✨
+
+Hope this day is everything you deserve and more...
+
+Happy Birthday, Priyanshi 🎨✍️
+
+Today is your day, but today I also want to thank one more person... your mom.
+
+Thank you for giving birth to you. For bringing you into this world. Because if it weren't for her, I wouldn't be meeting you today, nor would I be talking to you. So thank you to her...
+
+So today I wish you, and her too... from the bottom of my heart.
+
+You're one of the best things that happened to me. And I mean that.
+
+Have the happiest birthday. Eat well. smile more
+
+Wishing you a day full of smiles,
+warmth, and beautiful moments. Have the most wonderful birthday! 💜💜
+
+ 💕`
 
 export default function Letter({ onNext }) {
     const [isOpen, setIsOpen] = useState(false)
@@ -22,7 +41,7 @@ export default function Letter({ onNext }) {
     const [showFullNote, setShowFullNote] = useState(false)
     const scrollRef = useRef(null)
 
-    const letterText = `You are more than just a friend — you are someone I always want to see safe, happy and smiling.\n\nNo big promises, no spotlight — just a little quiet care, always. 💕`
+    const letterText = `You are more than just a friend ...you are someone I always want to see safe, happy and smiling.\n\nNo big promises, no spotlight...If it comes to a person I truly consider my own, I'm willing to go to any extreme, from death to life itself. If giving my life, or my organs, could give that person life, I wouldn't hesitate for a second... And most importantly...I'd do it all anonymously...without knowing anyone....and....just a little quiet care, always. 💕`
 
     useEffect(() => {
         if (scrollRef.current) {
